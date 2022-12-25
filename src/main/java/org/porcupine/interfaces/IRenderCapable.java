@@ -10,5 +10,7 @@ public interface IRenderCapable {
     /**
      * Invoked every frame.
      */
-    void onRender(Renderer renderer, double delta);
+    default void onRender(Renderer renderer, double delta) {
+    
+    }
 }

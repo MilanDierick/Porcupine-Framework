@@ -13,12 +13,16 @@ public interface ISerializable {
      *
      * @param writer The writer to write to.
      */
-    void onSerialize(FilePutter writer);
-
+    default void onSerialize(FilePutter writer) {
+    
+    }
+    
     /**
      * Invoked when the object is being deserialized.
      *
      * @param reader The reader to read from.
      */
-    void onDeserialize(FileGetter reader);
+    default void onDeserialize(FileGetter reader) {
+    
+    }
 }

@@ -10,5 +10,7 @@ public interface ITickCapable {
      *
      * @param delta Time in milliseconds since last tick.
      */
-    void onTick(double delta);
+    default void onTick(double delta) {
+    
+    }
 }
