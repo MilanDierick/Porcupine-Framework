@@ -2,7 +2,7 @@
  * Copyright (c) 2022 Milan Dierick | This source file is licensed under a modified version of Apache 2.0
  */
 
-package org.porcupine.entities;
+package org.porcupine.examples;
 
 import init.sprite.UI.UI;
 import org.porcupine.interfaces.IRenderCapable;
@@ -13,10 +13,10 @@ import snake2d.util.sprite.text.Text;
 
 import java.util.ArrayDeque;
 
-public class FPSCounter implements IScriptEntity, ITickCapable, IRenderCapable {
+public final class FPSCounter implements IScriptEntity, ITickCapable, IRenderCapable {
     private final int maxSamples = 100;
     private int tickFPS = 0;
-    private final ArrayDeque<Double> tickTimes = new ArrayDeque<>(maxSamples);
+    private final ArrayDeque<Long> tickTimes = new ArrayDeque<>(maxSamples);
 
     @Override
     public void onInitializeEarly() {
@@ -39,7 +39,8 @@ public class FPSCounter implements IScriptEntity, ITickCapable, IRenderCapable {
             tickTimes.removeFirst();
         }
 
-        tickTimes.addLast(delta);
+        // Add the current system time to the queue
+        tickTimes.addLast(System.currentTimeMillis());
 
         if (tickTimes.size() > 1) { // We need at least two samples to calculate FPS.
             double tickTime = tickTimes.getLast() - tickTimes.getFirst();

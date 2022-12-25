@@ -75,7 +75,7 @@
                         <configuration>
                             <target>
                                 <copy file="target/${project.artifactId}-1.0-SNAPSHOT.jar"
-                                      tofile="${user.home}/appdata/roaming/songsofsyx/mods/SoS_Sandbox/V63/script/jar/${project.artifactId}-1.0-SNAPSHOT.jar"/>
+                                      tofile="${user.home}/appdata/roaming/songsofsyx/mods/PorcupineFramework/V63/script/jar/${project.artifactId}-1.0-SNAPSHOT.jar"/>
                             </target>
                         </configuration>
                         <goals>
