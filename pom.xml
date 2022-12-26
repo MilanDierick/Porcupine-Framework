@@ -58,7 +58,6 @@
                             <addBuildEnvironmentEntries>false</addBuildEnvironmentEntries>
                             <addExtensions>false</addExtensions>
                             <classpathLayoutType>simple</classpathLayoutType>
-                            <classpathPrefix>libs/</classpathPrefix>
                         </manifest>
                     </archive>
 
