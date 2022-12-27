@@ -10,6 +10,7 @@ import org.porcupine.interfaces.ISerializable;
 import org.porcupine.interfaces.ITickCapable;
 import org.porcupine.modules.AggregateModule;
 import org.porcupine.modules.AggregateModuleLoader;
+import org.porcupine.utilities.Logger;
 import script.SCRIPT;
 import snake2d.Renderer;
 import snake2d.util.file.FileGetter;
@@ -91,7 +92,7 @@ public class Instance implements SCRIPT.SCRIPT_INSTANCE {
 	
 	@Override
 	public void save(FilePutter filePutter) {
-		System.out.println("Saving Porcupine framework state information...");
+		Logger.info("Saving Porcupine framework state information...");
 		
 		for (ISerializable serializable : serializables) {
 			serializable.onSerialize(filePutter);
@@ -100,7 +101,7 @@ public class Instance implements SCRIPT.SCRIPT_INSTANCE {
 	
 	@Override
 	public void load(FileGetter fileGetter) {
-		System.out.println("Loading Porcupine framework state information...");
+		Logger.info("Loading Porcupine framework state information...");
 		
 		for (ISerializable serializable : serializables) {
 			serializable.onDeserialize(fileGetter);

@@ -4,6 +4,7 @@
 
 package org.porcupine.sandbox;
 
+import org.porcupine.utilities.Logger;
 import script.SCRIPT;
 
 public class Sandbox implements SCRIPT {
@@ -19,12 +20,12 @@ public class Sandbox implements SCRIPT {
 
     @Override
     public void initBeforeGameCreated() {
-        System.out.println("Initializing Porcupine framework...");
+        Logger.info("Initializing Porcupine framework...");
     }
 
     @Override
     public SCRIPT_INSTANCE initAfterGameCreated() {
-        System.out.println("Porcupine framework initialized.");
+        Logger.info("Porcupine framework initialized.");
         return new Instance();
     }
 

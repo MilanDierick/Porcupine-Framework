@@ -9,6 +9,7 @@ import org.porcupine.interfaces.IScriptEntity;
 import org.porcupine.utilities.Logger;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -74,7 +75,7 @@ public class AggregateModuleLoader {
 			return null;
 		}
 		
-		URLClassLoader loader = new URLClassLoader(urls.toArray(new URL[jarPaths.size()]));
+		URLClassLoader loader = new URLClassLoader(urls.toArray(new URL[jarPaths.size()]), AggregateModuleLoader.class.getClassLoader());
 		
 		for (Path jarPath : jarPaths) {
 			try {
@@ -85,7 +86,11 @@ public class AggregateModuleLoader {
 					AggregateModule module = extractModule(loader, entry);
 					
 					if (module != null) {
-						modules.add(module);
+						if (modules.add(module)) {
+							Logger.info("Loaded module %s from %s", module.getName(), jarPath.getFileName());
+						} else {
+							Logger.warn("Duplicate module %s found in %s. Please contact the module developer.", module.getName(), jarPath.getFileName());
+						}
 					}
 				}
 			} catch (IOException e) {
@@ -107,11 +112,14 @@ public class AggregateModuleLoader {
 		try {
 			Class<?> clazz = loader.loadClass(className);
 			
-			if (IScriptEntity.class.isAssignableFrom(clazz)) {
-				return new AggregateModule().tryCreate(clazz);
+			if (IScriptEntity.class.isAssignableFrom(clazz) && !clazz.isInterface()) {
+				return new AggregateModule().tryCreate(clazz.getDeclaredConstructor().newInstance());
 			}
 		} catch (ClassNotFoundException e) {
-			Logger.error("Failed to load class {} from jar {}.\nPlease contact the module developer.", className, entry.getName());
+			Logger.error("Failed to load class %s. Please contact the module developer.", className);
+		} catch (InvocationTargetException | InstantiationException | IllegalAccessException |
+		         NoSuchMethodException e) {
+			Logger.error("Failed to instantiate class %s. Please contact the module developer.", className);
 		}
 		
 		return null;

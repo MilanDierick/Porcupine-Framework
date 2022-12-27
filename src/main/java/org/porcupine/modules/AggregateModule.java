@@ -17,6 +17,22 @@ public class AggregateModule {
 	public ISerializable serializable;
 	public ITickCapable tickCapable;
 	
+	public String getName() {
+		return scriptEntity.getName();
+	}
+	
+	public String getDescription() {
+		return scriptEntity.getDescription();
+	}
+	
+	public String getAuthor() {
+		return scriptEntity.getAuthor();
+	}
+	
+	public String getVersion() {
+		return scriptEntity.getVersion();
+	}
+	
 	@Override
 	public boolean equals(Object o) {
 		if (this == o)
