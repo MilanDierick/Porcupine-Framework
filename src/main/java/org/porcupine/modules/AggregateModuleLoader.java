@@ -6,12 +6,17 @@ package org.porcupine.modules;
 
 import init.paths.PATHS;
 import org.porcupine.interfaces.IScriptEntity;
+import org.porcupine.utilities.Logger;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.nio.file.Files;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 
@@ -56,34 +61,59 @@ public class AggregateModuleLoader {
 		return paths;
 	}
 	
-	public static ArrayList<AggregateModule> extractModules(ArrayList<Path> jarPaths) {
-		ArrayList<AggregateModule> modules = new ArrayList<>();
+	public static Set<AggregateModule> extractModules(ArrayList<Path> jarPaths) {
+		Set<AggregateModule> modules = new HashSet<>(); // We use a set to prevent duplicates.
+		List<URL> urls = new ArrayList<>(jarPaths.size());
+		
+		try {
+			for (Path jarPath : jarPaths) {
+				urls.add(jarPath.toUri().toURL());
+			}
+		} catch (MalformedURLException e) {
+			Logger.error("Failed to interpret jar path as URL, aborting.");
+			return null;
+		}
+		
+		URLClassLoader loader = new URLClassLoader(urls.toArray(new URL[jarPaths.size()]));
 		
 		for (Path jarPath : jarPaths) {
-			try (JarInputStream stream = new JarInputStream(Files.newInputStream(jarPath))) {
+			try {
+				JarInputStream stream = new JarInputStream(urls.get(jarPaths.indexOf(jarPath)).openStream());
 				JarEntry entry;
 				
 				while ((entry = stream.getNextJarEntry()) != null) {
-					String entryName = entry.getName();
+					AggregateModule module = extractModule(loader, entry);
 					
-					if (entry.getName().endsWith(".class")) {
-						String className = entryName.replace(".class", "").replace("/", ".");
-						Class<?> clazz = Class.forName(className);
-						
-						// We want to ensure that we are not picking up any interface classes. We only want to pick up
-						// classes that implement the interfaces. This is why we check if the class is an interface.
-						if (IScriptEntity.class.isAssignableFrom(clazz) && !clazz.isInterface()) {
-							AggregateModule module = new AggregateModule();
-							modules.add(module.tryCreate(clazz.getDeclaredConstructor().newInstance()));
-						}
+					if (module != null) {
+						modules.add(module);
 					}
 				}
-			} catch (IOException | ClassNotFoundException | InstantiationException | IllegalAccessException |
-			         InvocationTargetException | NoSuchMethodException e) {
-				throw new RuntimeException(e);
+			} catch (IOException e) {
+				Logger.error("Failed to read jar file, aborting.");
+				return null;
 			}
 		}
 		
 		return modules;
+	}
+	
+	private static AggregateModule extractModule(URLClassLoader loader, JarEntry entry) {
+		if (entry.isDirectory() || !entry.getName().endsWith(".class")) {
+			return null;
+		}
+		
+		String className = entry.getName().replace(".class", "").replace("/", ".");
+		
+		try {
+			Class<?> clazz = loader.loadClass(className);
+			
+			if (IScriptEntity.class.isAssignableFrom(clazz)) {
+				return new AggregateModule().tryCreate(clazz);
+			}
+		} catch (ClassNotFoundException e) {
+			Logger.error("Failed to load class {} from jar {}.\nPlease contact the module developer.", className, entry.getName());
+		}
+		
+		return null;
 	}
 }

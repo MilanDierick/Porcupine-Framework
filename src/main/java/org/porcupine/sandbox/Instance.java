@@ -18,6 +18,7 @@ import snake2d.util.file.FilePutter;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class Instance implements SCRIPT.SCRIPT_INSTANCE {
 	private final List<IScriptEntity> scriptEntities;
@@ -34,7 +35,11 @@ public class Instance implements SCRIPT.SCRIPT_INSTANCE {
 		ArrayList<Path> paths = AggregateModuleLoader.getModPaths();
 		ArrayList<Path> modulePaths = AggregateModuleLoader.extendToScriptPaths(paths);
 		ArrayList<Path> jarPaths = AggregateModuleLoader.extendToJarPaths(modulePaths);
-		ArrayList<AggregateModule> modules = AggregateModuleLoader.extractModules(jarPaths);
+		Set<AggregateModule> modules = AggregateModuleLoader.extractModules(jarPaths);
+		
+		if (modules == null) {
+			return;
+		}
 		
 		for (AggregateModule module : modules) {
 			if (module.scriptEntity != null) {
