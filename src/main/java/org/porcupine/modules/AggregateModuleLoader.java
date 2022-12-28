@@ -14,14 +14,13 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 
 public class AggregateModuleLoader {
+	private static HashMap<String, URL> loadedClasses = new HashMap<>();
+	
 	public static ArrayList<Path> getModPaths() {
 		String[] modFolderNames = PATHS.local().MODS.folders();
 		Path modsPath = PATHS.local().MODS.get();
@@ -83,7 +82,7 @@ public class AggregateModuleLoader {
 				JarEntry entry;
 				
 				while ((entry = stream.getNextJarEntry()) != null) {
-					AggregateModule module = extractModule(loader, entry);
+					AggregateModule module = extractModule(loader, entry, urls.get(jarPaths.indexOf(jarPath)));
 					
 					if (module != null) {
 						if (modules.add(module)) {
@@ -102,18 +101,32 @@ public class AggregateModuleLoader {
 		return modules;
 	}
 	
-	private static AggregateModule extractModule(URLClassLoader loader, JarEntry entry) {
+	private static AggregateModule extractModule(URLClassLoader loader, JarEntry entry, URL currentJarPath) {
 		if (entry.isDirectory() || !entry.getName().endsWith(".class")) {
 			return null;
 		}
 		
 		String className = entry.getName().replace(".class", "").replace("/", ".");
 		
+		if (loadedClasses.containsKey(className)) {
+			String loadedJar = loadedClasses.get(className).getFile();
+			String currentJar = currentJarPath.getFile();
+			
+			// These strings are formatted as file:/path/to/jar.jar
+			// We just need the file name.
+			loadedJar = loadedJar.substring(loadedJar.lastIndexOf('/') + 1);
+			currentJar = currentJar.substring(currentJar.lastIndexOf('/') + 1);
+			
+			Logger.warn("Duplicate class %s found in %s and %s. Please contact the module developers.", className, loadedJar, currentJar);
+		}
+		
+		loadedClasses.put(className, currentJarPath);
+		
 		try {
 			Class<?> clazz = loader.loadClass(className);
 			
 			if (IScriptEntity.class.isAssignableFrom(clazz) && !clazz.isInterface()) {
-				return new AggregateModule().tryCreate(clazz.getDeclaredConstructor().newInstance());
+				return new AggregateModule(clazz.getDeclaredConstructor().newInstance());
 			}
 		} catch (ClassNotFoundException e) {
 			Logger.error("Failed to load class %s. Please contact the module developer.", className);

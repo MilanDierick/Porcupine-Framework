@@ -93,6 +93,12 @@
             <artifactId>songsofsyx</artifactId>
             <version>0.6.3</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.jetbrains</groupId>
+            <artifactId>annotations</artifactId>
+            <version>23.1.0</version>
+        </dependency>
     </dependencies>
 
 </project>

@@ -17,6 +17,28 @@ public class AggregateModule {
 	public ISerializable serializable;
 	public ITickCapable tickCapable;
 	
+	public AggregateModule(Object object) throws IllegalArgumentException {
+		if (object instanceof IRenderCapable) {
+			renderCapable = (IRenderCapable) object;
+		}
+		
+		if (object instanceof IScriptEntity) {
+			scriptEntity = (IScriptEntity) object;
+		}
+		
+		if (object instanceof ISerializable) {
+			serializable = (ISerializable) object;
+		}
+		
+		if (object instanceof ITickCapable) {
+			tickCapable = (ITickCapable) object;
+		}
+		
+		if (renderCapable == null && scriptEntity == null && serializable == null && tickCapable == null) {
+			throw new IllegalArgumentException("Object is not a valid module");
+		}
+	}
+	
 	public String getName() {
 		return scriptEntity.getName();
 	}
@@ -58,29 +80,5 @@ public class AggregateModule {
 		result = 31 * result + (serializable != null ? serializable.hashCode() : 0);
 		result = 31 * result + (tickCapable != null ? tickCapable.hashCode() : 0);
 		return result;
-	}
-	
-	public AggregateModule tryCreate(Object entity) throws InvalidAggregateException {
-		if (entity instanceof IScriptEntity) {
-			scriptEntity = (IScriptEntity) entity;
-		}
-		
-		if (entity instanceof IRenderCapable) {
-			renderCapable = (IRenderCapable) entity;
-		}
-		
-		if (entity instanceof ISerializable) {
-			serializable = (ISerializable) entity;
-		}
-		
-		if (entity instanceof ITickCapable) {
-			tickCapable = (ITickCapable) entity;
-		}
-		
-		if (renderCapable == null && scriptEntity == null && serializable == null && tickCapable == null) {
-			throw new InvalidAggregateException("The entity is not an instance of any of the interfaces.");
-		}
-		
-		return this;
 	}
 }
