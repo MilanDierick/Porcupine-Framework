@@ -5,7 +5,6 @@
 package org.porcupine.modules;
 
 import init.paths.PATHS;
-import org.porcupine.interfaces.IScriptEntity;
 import org.porcupine.utilities.Logger;
 
 import java.io.IOException;

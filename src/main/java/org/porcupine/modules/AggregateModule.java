@@ -4,11 +4,6 @@
 
 package org.porcupine.modules;
 
-import org.porcupine.interfaces.IRenderCapable;
-import org.porcupine.interfaces.IScriptEntity;
-import org.porcupine.interfaces.ISerializable;
-import org.porcupine.interfaces.ITickCapable;
-
 import java.util.Objects;
 
 public class AggregateModule {

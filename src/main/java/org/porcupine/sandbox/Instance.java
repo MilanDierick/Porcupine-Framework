@@ -4,10 +4,10 @@
 
 package org.porcupine.sandbox;
 
-import org.porcupine.interfaces.IRenderCapable;
-import org.porcupine.interfaces.IScriptEntity;
-import org.porcupine.interfaces.ISerializable;
-import org.porcupine.interfaces.ITickCapable;
+import org.porcupine.modules.IRenderCapable;
+import org.porcupine.modules.IScriptEntity;
+import org.porcupine.modules.ISerializable;
+import org.porcupine.modules.ITickCapable;
 import org.porcupine.modules.AggregateModule;
 import org.porcupine.modules.AggregateModuleLoader;
 import org.porcupine.utilities.Logger;
