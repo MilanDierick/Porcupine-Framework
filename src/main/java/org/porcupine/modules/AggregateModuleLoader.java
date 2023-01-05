@@ -35,7 +35,7 @@ public final class AggregateModuleLoader {
 	private static final Map<String, URI> loadedClasses = new HashMap<>();
 	
 	/**
-	 * @apiNote Setting this constructor to private prevents the class from being instantiated.
+	 * @apiNote Setting this constructor to private prevents the class from being erroneously instantiated.
 	 */
 	private AggregateModuleLoader() {
 	}

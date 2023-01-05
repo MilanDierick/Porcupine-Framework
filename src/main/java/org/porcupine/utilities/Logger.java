@@ -11,7 +11,7 @@ import java.util.Locale;
 public final class Logger {
 	
 	/**
-	 * @apiNote Setting this constructor to private prevents the class from being instantiated.
+	 * @apiNote Setting this constructor to private prevents the class from being erroneously instantiated.
 	 */
 	private Logger() {
 	}
