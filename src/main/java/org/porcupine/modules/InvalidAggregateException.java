@@ -4,10 +4,7 @@
 
 package org.porcupine.modules;
 
-import java.io.Serial;
-
 public class InvalidAggregateException extends RuntimeException {
-	@Serial
 	private static final long serialVersionUID = 1L;
 
 	public InvalidAggregateException(String message) {

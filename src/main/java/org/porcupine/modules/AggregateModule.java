@@ -4,6 +4,8 @@
 
 package org.porcupine.modules;
 
+import org.porcupine.utilities.Version;
+
 import java.util.Objects;
 
 public class AggregateModule {
@@ -12,7 +14,19 @@ public class AggregateModule {
 	public ISerializable serializable;
 	public ITickCapable tickCapable;
 	
-	public AggregateModule(Object object) throws IllegalArgumentException {
+	private String name;
+	private String description;
+	private String author;
+	private Version version;
+	
+	/**
+	 * Creates a new instance of AggregateModule.
+	 *
+	 * @param object The object to check.
+	 *
+	 * @throws IllegalArgumentException If the object does not implement {@link IRenderCapable}.
+	 */
+	public AggregateModule(Object object) {
 		if (object instanceof IRenderCapable) {
 			renderCapable = (IRenderCapable) object;
 		}
@@ -29,43 +43,47 @@ public class AggregateModule {
 			tickCapable = (ITickCapable) object;
 		}
 		
-		if (renderCapable == null && scriptEntity == null && serializable == null && tickCapable == null) {
+		if (isValidModule()) {
 			throw new IllegalArgumentException("Object is not a valid module");
 		}
 	}
 	
 	public String getName() {
-		return scriptEntity.getName();
+		return name;
 	}
 	
 	public String getDescription() {
-		return scriptEntity.getDescription();
+		return description;
 	}
 	
 	public String getAuthor() {
-		return scriptEntity.getAuthor();
+		return author;
 	}
 	
 	public String getVersion() {
-		return scriptEntity.getVersion();
+		return version.toString();
+	}
+	
+	private boolean isValidModule() {
+		return !(renderCapable == null && scriptEntity == null && serializable == null && tickCapable == null);
 	}
 	
 	@Override
-	public boolean equals(Object o) {
-		if (this == o)
+	public boolean equals(Object obj) {
+		if (this == obj)
 			return true;
-		if (o == null || getClass() != o.getClass())
+		if (obj == null || getClass() != obj.getClass())
 			return false;
 		
-		AggregateModule that = (AggregateModule) o;
+		AggregateModule other = (AggregateModule) obj;
 		
-		if (!Objects.equals(renderCapable, that.renderCapable))
+		if (!Objects.equals(renderCapable, other.renderCapable))
 			return false;
-		if (!scriptEntity.equals(that.scriptEntity))
+		if (!scriptEntity.equals(other.scriptEntity))
 			return false;
-		if (!Objects.equals(serializable, that.serializable))
+		if (!Objects.equals(serializable, other.serializable))
 			return false;
-		return Objects.equals(tickCapable, that.tickCapable);
+		return Objects.equals(tickCapable, other.tickCapable);
 	}
 	
 	@Override

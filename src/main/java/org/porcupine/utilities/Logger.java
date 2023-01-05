@@ -5,8 +5,16 @@
 package org.porcupine.utilities;
 
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
-public class Logger {
+@SuppressWarnings("UseOfSystemOutOrSystemErr")
+public final class Logger {
+	
+	/**
+	 * @apiNote Setting this constructor to private prevents the class from being instantiated.
+	 */
+	private Logger() {
+	}
 	
 	public static void debug(String message) {
 		log(LogLevel.DEBUG, message);
@@ -50,7 +58,7 @@ public class Logger {
 	
 	private static void log(LogLevel level, String format, Object... args) {
 		String printFormat = "[%s] [%s%s%s] %s%n";
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.ENGLISH);
 		String time = java.time.LocalTime.now().format(formatter);
 		String color = getColorForLevel(level);
 		System.out.printf(printFormat, time, color, level, "\u001B[0m", String.format(format, args));
@@ -58,7 +66,7 @@ public class Logger {
 	
 	private static void log(LogLevel level, String message) {
 		String printFormat = "[%s] [%s%s%s] %s%n";
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.ENGLISH);
 		String time = java.time.LocalTime.now().format(formatter);
 		String color = getColorForLevel(level);
 		System.out.printf(printFormat, time, color, level, "\u001B[0m", message);

@@ -2,12 +2,12 @@
  * Copyright (c) 2022 Milan Dierick | This source file is licensed under a modified version of Apache 2.0
  */
 
-package org.porcupine.sandbox;
+package org.porcupine.script;
 
 import org.porcupine.utilities.Logger;
 import script.SCRIPT;
 
-public class Sandbox implements SCRIPT {
+public class SuperScript implements SCRIPT {
     @Override
     public CharSequence name() {
         return "Porcupine Framework";

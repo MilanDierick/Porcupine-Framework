@@ -4,8 +4,6 @@
 
 package org.porcupine.utilities;
 
-import java.util.Objects;
-
 public class Version {
 	private final int major;
 	private final int minor;
@@ -61,17 +59,17 @@ public class Version {
 	
 	@Override
 	public String toString() {
-		return major + "." + minor + "." + patch + suffix;
+		return major + "." + minor + "." + patch + "-" + suffix;
 	}
 	
 	@Override
-	public boolean equals(Object o) {
-		if (this == o)
+	public boolean equals(Object obj) {
+		if (this == obj)
 			return true;
-		if (o == null || getClass() != o.getClass())
+		if (obj == null || getClass() != obj.getClass())
 			return false;
 		
-		Version version = (Version) o;
+		Version version = (Version) obj;
 		
 		if (major != version.major)
 			return false;

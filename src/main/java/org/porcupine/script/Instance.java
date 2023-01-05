@@ -2,7 +2,7 @@
  * Copyright (c) 2022 Milan Dierick | This source file is licensed under a modified version of Apache 2.0
  */
 
-package org.porcupine.sandbox;
+package org.porcupine.script;
 
 import org.porcupine.modules.IRenderCapable;
 import org.porcupine.modules.IScriptEntity;
@@ -18,6 +18,7 @@ import snake2d.util.file.FilePutter;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -33,9 +34,9 @@ public class Instance implements SCRIPT.SCRIPT_INSTANCE {
 		this.renderCapables = new ArrayList<>();
 		this.serializables = new ArrayList<>();
 		
-		ArrayList<Path> paths = AggregateModuleLoader.getModPaths();
-		ArrayList<Path> modulePaths = AggregateModuleLoader.extendToScriptPaths(paths);
-		ArrayList<Path> jarPaths = AggregateModuleLoader.extendToJarPaths(modulePaths);
+		Iterable<Path> paths = AggregateModuleLoader.getModPaths();
+		Collection<Path> modulePaths = AggregateModuleLoader.extendToScriptPaths(paths);
+		List<Path> jarPaths = AggregateModuleLoader.extendToJarPaths(modulePaths);
 		Set<AggregateModule> modules = AggregateModuleLoader.extractModules(jarPaths);
 		
 		if (modules == null) {
@@ -43,21 +44,7 @@ public class Instance implements SCRIPT.SCRIPT_INSTANCE {
 		}
 		
 		for (AggregateModule module : modules) {
-			if (module.scriptEntity != null) {
-				scriptEntities.add(module.scriptEntity);
-			}
-			
-			if (module.tickCapable != null) {
-				tickCapables.add(module.tickCapable);
-			}
-			
-			if (module.renderCapable != null) {
-				renderCapables.add(module.renderCapable);
-			}
-			
-			if (module.serializable != null) {
-				serializables.add(module.serializable);
-			}
+			processModule(module);
 		}
 		
 		for (IScriptEntity entity : scriptEntities) {
@@ -69,24 +56,42 @@ public class Instance implements SCRIPT.SCRIPT_INSTANCE {
 		}
 	}
 	
+	private void processModule(AggregateModule module) {
+		if (module.scriptEntity != null) {
+			scriptEntities.add(module.scriptEntity);
+		}
+		
+		if (module.tickCapable != null) {
+			tickCapables.add(module.tickCapable);
+		}
+		
+		if (module.renderCapable != null) {
+			renderCapables.add(module.renderCapable);
+		}
+		
+		if (module.serializable != null) {
+			serializables.add(module.serializable);
+		}
+	}
+	
 	/**
-	 * @param delta The time in seconds since the last game tick while the game was running.
+	 * @param v The time in seconds since the last game tick while the game was running.
 	 *
 	 * @apiNote delta is zero when the game is paused.
 	 */
 	@Override
-	public void update(double delta) {
+	public void update(double v) {
 		for (ITickCapable tickCapable : tickCapables) {
-			tickCapable.onTick(delta);
+			tickCapable.onTick(v);
 		}
 	}
 	
 	@Override
-	public void render(Renderer renderer, float delta) {
-		SCRIPT.SCRIPT_INSTANCE.super.render(renderer, delta);
+	public void render(Renderer r, float ds) {
+		SCRIPT.SCRIPT_INSTANCE.super.render(r, ds);
 		
 		for (IRenderCapable renderCapable : renderCapables) {
-			renderCapable.onRender(renderer, delta);
+			renderCapable.onRender(r, ds);
 		}
 	}
 	

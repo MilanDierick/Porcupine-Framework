@@ -21,20 +21,4 @@ public interface IScriptEntity {
     default void onInitializeLate() {
     
     }
-    
-    default String getName() {
-        return null;
-    }
-    
-    default String getDescription() {
-        return null;
-    }
-    
-    default String getAuthor() {
-        return null;
-    }
-    
-    default String getVersion() {
-        return null;
-    }
 }
