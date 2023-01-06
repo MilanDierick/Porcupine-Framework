@@ -4,6 +4,9 @@
 
 package org.porcupine.statistics;
 
+/**
+ * @author Milan Dierick
+ */
 public interface IStats {
 	/**
 	 * This method is used to refresh the statistics.

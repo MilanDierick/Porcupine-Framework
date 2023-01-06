@@ -4,7 +4,9 @@
 
 package org.porcupine.statistics;
 
+import init.resources.RESOURCE;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -12,14 +14,10 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * This class is a cache for all statistics categories. It is used to prevent multiple instances of the same category,
- * along with quick lookups for categories.
- *
  * @author Milan Dierick
  */
-@SuppressWarnings("ClassNamePrefixedWithPackageName")
-public class StatisticsCategoryCache implements Map<Class<? extends IStats>, IStats> {
-	private static final Map<Class<? extends IStats>, IStats> statsCategories = new HashMap<>();
+public class ResourceMetadataCache implements Map<RESOURCE, ResourceMetadata> {
+	private final Map<RESOURCE, ResourceMetadata> cache = new HashMap<>();
 	
 	/**
 	 * Returns the number of key-value mappings in this map.  If the map contains more than {@code Integer.MAX_VALUE}
@@ -29,7 +27,7 @@ public class StatisticsCategoryCache implements Map<Class<? extends IStats>, ISt
 	 */
 	@Override
 	public int size() {
-		return statsCategories.size();
+		return cache.size();
 	}
 	
 	/**
@@ -39,7 +37,7 @@ public class StatisticsCategoryCache implements Map<Class<? extends IStats>, ISt
 	 */
 	@Override
 	public boolean isEmpty() {
-		return statsCategories.isEmpty();
+		return cache.isEmpty();
 	}
 	
 	/**
@@ -58,7 +56,7 @@ public class StatisticsCategoryCache implements Map<Class<? extends IStats>, ISt
 	 */
 	@Override
 	public boolean containsKey(Object key) {
-		return statsCategories.containsKey(key);
+		return cache.containsKey(key);
 	}
 	
 	/**
@@ -78,7 +76,7 @@ public class StatisticsCategoryCache implements Map<Class<? extends IStats>, ISt
 	 */
 	@Override
 	public boolean containsValue(Object value) {
-		return statsCategories.containsValue(value);
+		return cache.containsValue(value);
 	}
 	
 	/**
@@ -105,8 +103,35 @@ public class StatisticsCategoryCache implements Map<Class<? extends IStats>, ISt
 	 *                              href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
 	 */
 	@Override
-	public IStats get(Object key) {
-		return statsCategories.get(key);
+	public ResourceMetadata get(Object key) {
+		return cache.get(key);
+	}
+	
+	/**
+	 * Associates the specified value with the specified key in this map (optional operation).  If the map previously
+	 * contained a mapping for the key, the old value is replaced by the specified value.  (A map {@code m} is said to
+	 * contain a mapping for a key {@code k} if and only if {@link #containsKey(Object) m.containsKey(k)} would return
+	 * {@code true}.)
+	 *
+	 * @param key   key with which the specified value is to be associated
+	 * @param value value to be associated with the specified key
+	 *
+	 * @return the previous value associated with {@code key}, or {@code null} if there was no mapping for {@code key}.
+	 * (A {@code null} return can also indicate that the map previously associated {@code null} with {@code key}, if the
+	 * implementation supports {@code null} values.)
+	 *
+	 * @throws UnsupportedOperationException if the {@code put} operation is not supported by this map
+	 * @throws ClassCastException            if the class of the specified key or value prevents it from being stored in
+	 *                                       this map
+	 * @throws NullPointerException          if the specified key or value is null and this map does not permit null
+	 *                                       keys or values
+	 * @throws IllegalArgumentException      if some property of the specified key or value prevents it from being
+	 *                                       stored in this map
+	 */
+	@Nullable
+	@Override
+	public ResourceMetadata put(RESOURCE key, ResourceMetadata value) {
+		return cache.put(key, value);
 	}
 	
 	/**
@@ -135,69 +160,13 @@ public class StatisticsCategoryCache implements Map<Class<? extends IStats>, ISt
 	 *                                       href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
 	 */
 	@Override
-	public IStats remove(Object key) {
-		return statsCategories.remove(key);
-	}
-	
-	/**
-	 * Removes all the mappings from this map (optional operation). The map will be empty after this call returns.
-	 *
-	 * @throws UnsupportedOperationException if the {@code clear} operation is not supported by this map
-	 */
-	@Override
-	public void clear() {
-		statsCategories.clear();
-	}
-	
-	/**
-	 * Returns a {@link Set} view of the keys contained in this map. The set is backed by the map, so changes to the map
-	 * are reflected in the set, and vice-versa.  If the map is modified while an iteration over the set is in progress
-	 * (except through the iterator's own {@code remove} operation), the results of the iteration are undefined.  The
-	 * set supports element removal, which removes the corresponding mapping from the map, via the
-	 * {@code Iterator.remove}, {@code Set.remove}, {@code removeAll}, {@code retainAll}, and {@code clear} operations.
-	 * It does not support the {@code add} or {@code addAll} operations.
-	 *
-	 * @return a set view of the keys contained in this map
-	 */
-	@Override
-	public Set<Class<? extends IStats>> keySet() {
-		return statsCategories.keySet();
-	}
-	
-	/**
-	 * Returns a {@link Collection} view of the values contained in this map. The collection is backed by the map, so
-	 * changes to the map are reflected in the collection, and vice-versa.  If the map is modified while an iteration
-	 * over the collection is in progress (except through the iterator's own {@code remove} operation), the results of
-	 * the iteration are undefined.  The collection supports element removal, which removes the corresponding mapping
-	 * from the map, via the {@code Iterator.remove}, {@code Collection.remove}, {@code removeAll}, {@code retainAll}
-	 * and {@code clear} operations.  It does not support the {@code add} or {@code addAll} operations.
-	 *
-	 * @return a collection view of the values contained in this map
-	 */
-	@Override
-	public Collection<IStats> values() {
-		return statsCategories.values();
-	}
-	
-	/**
-	 * Returns a {@link Set} view of the mappings contained in this map. The set is backed by the map, so changes to the
-	 * map are reflected in the set, and vice-versa.  If the map is modified while an iteration over the set is in
-	 * progress (except through the iterator's own {@code remove} operation, or through the {@code setValue} operation
-	 * on a map entry returned by the iterator) the results of the iteration are undefined.  The set supports element
-	 * removal, which removes the corresponding mapping from the map, via the {@code Iterator.remove},
-	 * {@code Set.remove}, {@code removeAll}, {@code retainAll} and {@code clear} operations.  It does not support the
-	 * {@code add} or {@code addAll} operations.
-	 *
-	 * @return a set view of the mappings contained in this map
-	 */
-	@Override
-	public Set<Entry<Class<? extends IStats>, IStats>> entrySet() {
-		return statsCategories.entrySet();
+	public ResourceMetadata remove(Object key) {
+		return cache.remove(key);
 	}
 	
 	/**
 	 * Copies all the mappings from the specified map to this map (optional operation).  The effect of this call is
-	 * equivalent to that of calling {@link #put(Class, IStats) put(k, v)} on this map once for each mapping from key
+	 * equivalent to that of calling {@link #put(RESOURCE, ResourceMetadata) put(k, v)} on this map once for each mapping from key
 	 * {@code k} to value {@code v} in the specified map.  The behavior of this operation is undefined if the specified
 	 * map is modified while the operation is in progress.
 	 *
@@ -212,33 +181,66 @@ public class StatisticsCategoryCache implements Map<Class<? extends IStats>, ISt
 	 *                                       being stored in this map
 	 */
 	@Override
-	public void putAll(@NotNull Map<? extends Class<? extends IStats>, ? extends IStats> m) {
-		statsCategories.putAll(m);
+	public void putAll(@NotNull Map<? extends RESOURCE, ? extends ResourceMetadata> m) {
+		cache.putAll(m);
 	}
 	
 	/**
-	 * Associates the specified value with the specified key in this map (optional operation).  If the map previously
-	 * contained a mapping for the key, the old value is replaced by the specified value.  (A map {@code m} is said to
-	 * contain a mapping for a key {@code k} if and only if {@link #containsKey(Object) m.containsKey(k)} would return
-	 * {@code true}.)
+	 * Removes all the mappings from this map (optional operation). The map will be empty after this call returns.
 	 *
-	 * @param key   key with which the specified value is to be associated
-	 * @param value value to be associated with the specified key
-	 *
-	 * @return the previous value associated with {@code key}, or {@code null} if there was no mapping for {@code key}.
-	 * (A {@code null} return can also indicate that the map previously associated {@code null} with {@code key}, if the
-	 * implementation supports {@code null} values.)
-	 *
-	 * @throws UnsupportedOperationException if the {@code put} operation is not supported by this map
-	 * @throws ClassCastException            if the class of the specified key or value prevents it from being stored in
-	 *                                       this map
-	 * @throws NullPointerException          if the specified key or value is null and this map does not permit null
-	 *                                       keys or values
-	 * @throws IllegalArgumentException      if some property of the specified key or value prevents it from being
-	 *                                       stored in this map
+	 * @throws UnsupportedOperationException if the {@code clear} operation is not supported by this map
 	 */
 	@Override
-	public IStats put(Class<? extends IStats> key, IStats value) {
-		return statsCategories.put(key, value);
+	public void clear() {
+		cache.clear();
+	}
+	
+	/**
+	 * Returns a {@link Set} view of the keys contained in this map. The set is backed by the map, so changes to the map
+	 * are reflected in the set, and vice-versa.  If the map is modified while an iteration over the set is in progress
+	 * (except through the iterator's own {@code remove} operation), the results of the iteration are undefined.  The
+	 * set supports element removal, which removes the corresponding mapping from the map, via the
+	 * {@code Iterator.remove}, {@code Set.remove}, {@code removeAll}, {@code retainAll}, and {@code clear} operations.
+	 * It does not support the {@code add} or {@code addAll} operations.
+	 *
+	 * @return a set view of the keys contained in this map
+	 */
+	@NotNull
+	@Override
+	public Set<RESOURCE> keySet() {
+		return cache.keySet();
+	}
+	
+	/**
+	 * Returns a {@link Collection} view of the values contained in this map. The collection is backed by the map, so
+	 * changes to the map are reflected in the collection, and vice-versa.  If the map is modified while an iteration
+	 * over the collection is in progress (except through the iterator's own {@code remove} operation), the results of
+	 * the iteration are undefined.  The collection supports element removal, which removes the corresponding mapping
+	 * from the map, via the {@code Iterator.remove}, {@code Collection.remove}, {@code removeAll}, {@code retainAll}
+	 * and {@code clear} operations.  It does not support the {@code add} or {@code addAll} operations.
+	 *
+	 * @return a collection view of the values contained in this map
+	 */
+	@NotNull
+	@Override
+	public Collection<ResourceMetadata> values() {
+		return cache.values();
+	}
+	
+	/**
+	 * Returns a {@link Set} view of the mappings contained in this map. The set is backed by the map, so changes to the
+	 * map are reflected in the set, and vice-versa.  If the map is modified while an iteration over the set is in
+	 * progress (except through the iterator's own {@code remove} operation, or through the {@code setValue} operation
+	 * on a map entry returned by the iterator) the results of the iteration are undefined.  The set supports element
+	 * removal, which removes the corresponding mapping from the map, via the {@code Iterator.remove},
+	 * {@code Set.remove}, {@code removeAll}, {@code retainAll} and {@code clear} operations.  It does not support the
+	 * {@code add} or {@code addAll} operations.
+	 *
+	 * @return a set view of the mappings contained in this map
+	 */
+	@NotNull
+	@Override
+	public Set<Entry<RESOURCE, ResourceMetadata>> entrySet() {
+		return cache.entrySet();
 	}
 }

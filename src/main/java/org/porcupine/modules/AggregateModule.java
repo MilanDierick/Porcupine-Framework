@@ -43,7 +43,7 @@ public class AggregateModule {
 			tickCapable = (ITickCapable) object;
 		}
 		
-		if (isValidModule()) {
+		if (!isValidModule()) {
 			throw new IllegalArgumentException("Object is not a valid module");
 		}
 	}

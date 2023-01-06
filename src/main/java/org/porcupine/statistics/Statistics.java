@@ -10,6 +10,8 @@ package org.porcupine.statistics;
  * @implNote Internally, this interface uses a HashSet to store all statistic objects. This is done to allow for other
  * statistics to be added at runtime, for example by other modules. The framework provides accessors for all vanilla
  * statistics, but other statistics can be added using the {@link #put(Class, IStats)} method.
+ *
+ * @author Milan Dierick
  */
 // TODO: The statistics need to be saved and loaded. This is not yet implemented.
 @SuppressWarnings("ClassNamePrefixedWithPackageName")
@@ -18,6 +20,7 @@ public final class Statistics {
 	
 	static {
 		put(PopulationStats.class, new PopulationStats());
+		put(StockpileStatistics.class, new StockpileStatistics());
 	}
 	
 	/**
@@ -27,8 +30,6 @@ public final class Statistics {
 	}
 	
 	/**
-	 *
-	 *
 	 * @param key   The class of the statistic to get.
 	 * @param value The statistic to put.
 	 */
@@ -49,8 +50,8 @@ public final class Statistics {
 	 *
 	 * @return the statistic object.
 	 */
-	public static IStats get(Class<? extends IStats> key) {
-		return cache.get(key);
+	public static <Type extends IStats> Type get(Class<Type> key) {
+		return key.cast(cache.get(key));
 	}
 	
 	/**
@@ -58,5 +59,12 @@ public final class Statistics {
 	 */
 	public static PopulationStats getPopulationStats() {
 		return (PopulationStats) cache.get(PopulationStats.class);
+	}
+	
+	/**
+	 * @return the stockpile statistics.
+	 */
+	public static StockpileStatistics getStocksStatistics() {
+		return (StockpileStatistics) cache.get(StockpileStatistics.class);
 	}
 }

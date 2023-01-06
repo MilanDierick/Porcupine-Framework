@@ -10,6 +10,7 @@ import org.porcupine.modules.ISerializable;
 import org.porcupine.modules.ITickCapable;
 import org.porcupine.modules.AggregateModule;
 import org.porcupine.modules.AggregateModuleLoader;
+import org.porcupine.statistics.Statistics;
 import org.porcupine.utilities.Logger;
 import script.SCRIPT;
 import snake2d.Renderer;
@@ -75,14 +76,16 @@ public class Instance implements SCRIPT.SCRIPT_INSTANCE {
 	}
 	
 	/**
-	 * @param v The time in seconds since the last game tick while the game was running.
+	 * @param ds The time in seconds since the last game tick while the game was running.
 	 *
 	 * @apiNote delta is zero when the game is paused.
 	 */
 	@Override
-	public void update(double v) {
+	public void update(double ds) {
+		Statistics.refreshAllStats();
+		
 		for (ITickCapable tickCapable : tickCapables) {
-			tickCapable.onTick(v);
+			tickCapable.onTick(ds);
 		}
 	}
 	
@@ -96,20 +99,20 @@ public class Instance implements SCRIPT.SCRIPT_INSTANCE {
 	}
 	
 	@Override
-	public void save(FilePutter filePutter) {
+	public void save(FilePutter file) {
 		Logger.info("Saving Porcupine framework state information...");
 		
 		for (ISerializable serializable : serializables) {
-			serializable.onSerialize(filePutter);
+			serializable.onSerialize(file);
 		}
 	}
 	
 	@Override
-	public void load(FileGetter fileGetter) {
+	public void load(FileGetter file) {
 		Logger.info("Loading Porcupine framework state information...");
 		
 		for (ISerializable serializable : serializables) {
-			serializable.onDeserialize(fileGetter);
+			serializable.onDeserialize(file);
 		}
 	}
 }

@@ -129,8 +129,6 @@ public final class AggregateModuleLoader {
 					Logger.error("Failed to close URLClassLoader, aborting.");
 				}
 			}
-			
-			return null;
 		}
 		
 		return modules;
@@ -161,13 +159,13 @@ public final class AggregateModuleLoader {
 		return result;
 	}
 	
-	@SuppressWarnings({"DuplicateStringLiteralInspection", "DynamicRegexReplaceableByCompiledPattern"})
+	@SuppressWarnings({"DuplicateStringLiteralInspection", "DynamicRegexReplaceableByCompiledPattern", "HardcodedFileSeparator"})
 	private static @Nullable AggregateModule extractModule(URLClassLoader loader, JarEntry entry, URI currentJarPath) {
 		if (entry.isDirectory() || !entry.getName().endsWith(".class")) {
 			return null;
 		}
 		
-		String className = entry.getName().replace(".class", "").replace(File.separatorChar, '.');
+		String className = entry.getName().replace(".class", "").replace('/', '.');
 		
 		if (loadedClasses.containsKey(className)) {
 			String loadedJar = getFile(loadedClasses.get(className)).getPath();

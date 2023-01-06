@@ -6,6 +6,11 @@ package org.porcupine.statistics;
 
 import settlement.stats.STATS;
 
+/**
+ * @apiNote Do not use this class,it's a work in progress.
+ *
+ * @author Milan Dierick
+ */
 public class PopulationStats implements IStats {
 	private int currentPopulationCount;
 	private int currentNobelCount;
