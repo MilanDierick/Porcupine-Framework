@@ -5,6 +5,7 @@
 package org.porcupine.events;
 
 import game.faction.FACTIONS;
+import init.race.RACES;
 import init.resources.RESOURCE;
 import init.resources.RESOURCES;
 import org.porcupine.modules.IScriptEntity;
@@ -50,9 +51,6 @@ import world.map.regions.Region;
  * amount of time, with scaling modifiers applied to compensate for the pawn's fighting effectiveness.
  */
 public class RaidEvent implements IScriptEntity, ITickCapable {
-	public static final int VALUE_OF_PAWN = 2000;
-	public static final int MIN_REBEL_ARMY_SIZE = 10;
-	
 	/**
 	 * The percentage of the total targeted settlement population that will be added to the raiding army.
 	 */
@@ -70,6 +68,17 @@ public class RaidEvent implements IScriptEntity, ITickCapable {
 	 */
 	public static final float NON_PLAYER_REGION_WEIGHT = 0.25f;
 	
+	public static final int RAID_FREQUENCY_YEARS = 5;
+	public static final int RAID_FREQUENCY_LOWER_BOUNDS = 2;
+	public static final int RAID_FREQUENCY_UPPER_BOUNDS = 10;
+	
+	public static final int BASE_PAWN_VALUE = 500;
+	public static final float RATION_CONSUMPTION_PER_DAY = 0.25f;
+	public static final float DRINK_CONSUMPTION_PER_DAY = 0.25f;
+	public static final float CLOTHES_CONSUMPTION_PER_DAY = 0.04f;
+	
+	public static final int DAYS_PER_YEAR = 16;
+	
 	private int playerVictories;
 	
 	private int settlementPopulation;
@@ -80,15 +89,15 @@ public class RaidEvent implements IScriptEntity, ITickCapable {
 	private int valueOfRangedWeapon;
 	private int valueOfArmor;
 	
-	private int budget;
-	private final float budgetUsedForPawns = 0.4f;
-	private final float budgetUsedForWeapons = 0.4f;
-	private final float budgetUsedForArmor = 0.2f;
+	private final StockpileStatistics stockpileStatistics;
+	private ArmyBudgetDivision armyBudgetDivision;
 	
 	private final BOOLEAN_OBJECT<Region> playerFinder = t -> t.faction() == FACTIONS.player();
 	
 	public RaidEvent() {
 		IDebugPanelSett.add("Raid Event", this::triggerRaid);
+		
+		stockpileStatistics = Statistics.get(StockpileStatistics.class);
 	}
 	
 	@Override
@@ -118,23 +127,42 @@ public class RaidEvent implements IScriptEntity, ITickCapable {
 		settlementPopulation = STATS.POP().POP.data().get(null);
 	}
 	
-	private void calculateWealth() {
-		StockpileStatistics statistics = Statistics.get(StockpileStatistics.class);
-		
+	/**
+	 * Calculates the wealth of the settlement, based on the amount of resources in the stockpile.
+	 *
+	 * @implNote We are using the sell price of the resource, as it is the price that the raiders would receive if they
+	 * sold the resource to the markets. Raiders are an impatient folk, and would not want to wait for the resource to
+	 * be bought by other settlements, they want their profits NOW!
+	 */
+	private void calculateSettlementProsperity() {
 		for (RESOURCE resource : RESOURCES.ALL()) {
-			ResourceMetadata metadata = statistics.get(resource);
-			settlementWealth += metadata.getStockpile() * metadata.getBuyPrice();
+			ResourceMetadata metadata = stockpileStatistics.get(resource);
+			settlementWealth += metadata.getStockpile() * metadata.getSellPrice();
 		}
 	}
 	
-	private void calculateItemValues() {
-		StockpileStatistics statistics = Statistics.get(StockpileStatistics.class);
+	private void calculateBudget() {
+		armyBudgetDivision = new ArmyBudgetDivision(settlementWealth);
+	}
+	
+	/**
+	 * Calculates the value of a pawn, based on the amount of army supplies it consumes over a certain amount of time,
+	 * added on top of the base value of a pawn.
+	 */
+	private void calculatePawnValue() {
+		int valueOfRations = stockpileStatistics.get(RESOURCES.map().tryGet("RATION")).getBuyPrice();
+		int valueOfDrinks = stockpileStatistics.get(RESOURCES.map().tryGet("_ALCOHOL")).getBuyPrice();
+		int valueOfClothes = stockpileStatistics.get(RESOURCES.map().tryGet("CLOTHES")).getBuyPrice();
 		
-		valueOfPawn = VALUE_OF_PAWN;
+		float valueOfRationsPerDay = valueOfRations * RATION_CONSUMPTION_PER_DAY;
+		float valueOfDrinksPerDay = valueOfDrinks * DRINK_CONSUMPTION_PER_DAY;
+		float valueOfClothesPerDay = valueOfClothes * CLOTHES_CONSUMPTION_PER_DAY;
 		
-		valueOfMeleeWeapon = statistics.get(RESOURCES.map().tryGet("WEAPON")).getBuyPrice();
-		valueOfRangedWeapon = statistics.get(RESOURCES.map().tryGet("BOW")).getBuyPrice();
-		valueOfArmor = statistics.get(RESOURCES.map().tryGet("ARMOR")).getBuyPrice();
+		float valueOfRationsPerYear = valueOfRationsPerDay * DAYS_PER_YEAR;
+		float valueOfDrinksPerYear = valueOfDrinksPerDay * DAYS_PER_YEAR;
+		float valueOfClothesPerYear = valueOfClothesPerDay * DAYS_PER_YEAR;
+		
+		valueOfPawn = (int) (BASE_PAWN_VALUE + valueOfRationsPerYear + valueOfDrinksPerYear + valueOfClothesPerYear);
 	}
 	
 	/**
@@ -162,12 +190,8 @@ public class RaidEvent implements IScriptEntity, ITickCapable {
 			}
 		}
 		
-		// If this region is owned by the player, return.
-		if (region.faction() == FACTIONS.player()) {
-			return false;
-		}
-		
-		return WPathing.findAdjacentRegion(region.cx(), region.cy(), playerFinder) != null;
+		// If this region is owned by the player, return true.
+		return region.faction() == FACTIONS.player();
 	}
 	
 	/**
@@ -194,41 +218,6 @@ public class RaidEvent implements IScriptEntity, ITickCapable {
 		return region;
 	}
 	
-	/**
-	 * Calculates the number of soldiers in a rebel army for a given region.
-	 *
-	 * @param targetRegion The region where the raid will occur.
-	 *
-	 * @return the number of pawns that will be spawned in the raid.
-	 *
-	 * @implNote This implementation is copied from the game, using the flawed logic. This should be changed to a more
-	 * sensible implementation as described in the disclaimer of {@link RaidEvent}.
-	 */
-	private int calculateRebelArmySoldierCount(Region targetRegion) {
-		int rebelArmySoldierCount = 0;
-		
-		// If the target region is the player's capital region, add a number of soldiers based on the settlement's
-		// population.
-		if (targetRegion == FACTIONS.player().capitolRegion()) {
-			rebelArmySoldierCount += settlementPopulation * SETTLEMENT_POPULATION_WEIGHT;
-		}
-		
-		// Add soldiers to the rebel army based on the location of the player army.
-		for (WArmy playerArmy : FACTIONS.player().kingdom().armies().all()) {
-			if (playerArmy.region() == targetRegion) {
-				rebelArmySoldierCount += WARMYD.men(null).get(playerArmy);
-			} else if (playerArmy.region() != null && playerArmy.region().faction() == FACTIONS.player()) {
-				rebelArmySoldierCount += WARMYD.men(null).get(playerArmy) * PLAYER_REGION_WEIGHT;
-			} else {
-				rebelArmySoldierCount += WARMYD.men(null).get(playerArmy) * NON_PLAYER_REGION_WEIGHT;
-			}
-		}
-		
-		rebelArmySoldierCount = Math.max(rebelArmySoldierCount, MIN_REBEL_ARMY_SIZE);
-		
-		return rebelArmySoldierCount;
-	}
-	
 	private void spawnArmyInRegion(Region stagingRegion) {
 		// Find a random point in the staging region to spawn the army.
 		COORDINATE coordinate = WPathing.random(stagingRegion);
@@ -246,10 +235,31 @@ public class RaidEvent implements IScriptEntity, ITickCapable {
 			throw new IllegalStateException("Failed to find target region for staging region " + stagingRegion.name());
 		}
 		
-		// TODO: Continue here, see notes at the top of the file.
+		RaiderArmyConstructor constructor = new RaiderArmyConstructor(targetRegion, army);
+		
+		constructor.setTotalBudget(armyBudgetDivision.getTotalBudget())
+		           .setPawnsBudget(armyBudgetDivision.getPawnsBudget())
+		           .setWeaponsBudget(armyBudgetDivision.getWeaponsBudget())
+		           .setArmourBudget(armyBudgetDivision.getArmourBudget())
+		           .setCostPerPawn(valueOfPawn)
+		           .setCostPerMeleeWeapon(valueOfMeleeWeapon)
+		           .setCostPerRangedWeapon(valueOfRangedWeapon)
+		           .setCostPerArmour(valueOfArmor)
+		           .configure();
+		
+		army.name.clear().add(RACES.all().get(0).info.armyNames.rnd());
+		
+		for (WARMYD.WArmySupply supply : WARMYD.supplies().all) {
+			supply.current().set(army, supply.max(army));
+		}
 	}
 	
 	private void triggerRaid() {
+		calculatePopulation();
+		calculateSettlementProsperity();
+		calculatePawnValue();
+		calculateBudget();
+		
 		Logger.info("Triggering raid event, population: " + settlementPopulation + ", wealth: " + settlementWealth);
 		
 		Region spawnRegion = findSuitableRegion();
@@ -258,5 +268,7 @@ public class RaidEvent implements IScriptEntity, ITickCapable {
 		if (spawnRegion == null) {
 			throw new IllegalStateException("RaidEvent: no suitable region found to spawn raid in.");
 		}
+		
+		spawnArmyInRegion(spawnRegion);
 	}
 }
