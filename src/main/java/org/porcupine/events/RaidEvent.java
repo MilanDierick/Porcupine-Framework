@@ -173,7 +173,7 @@ public class RaidEvent implements IScriptEntity, ITickCapable {
 	/**
 	 * Finds a suitable region to spawn a raid in, that is adjacent to a region owned by the player.
 	 *
-	 * @return a random region that is suitable to spawn a raid in.
+	 * @return a region that is suitable to spawn a raid in.
 	 *
 	 * @implNote With how it is currently set up, a raid will always spawn in the same region given the player doesn't
 	 * occupy new regions. This is not the intended behaviour, but it is a good starting point. Ideally, the raid should
