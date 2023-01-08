@@ -14,6 +14,7 @@ import org.porcupine.statistics.ResourceMetadata;
 import org.porcupine.statistics.Statistics;
 import org.porcupine.statistics.StockpileStatistics;
 import org.porcupine.utilities.Logger;
+import settlement.main.SETT;
 import settlement.stats.STATS;
 import snake2d.util.datatypes.COORDINATE;
 import util.data.BOOLEAN_OBJECT;
@@ -28,6 +29,7 @@ import world.map.regions.Region;
 // TODO: Calculate how much it costs to equip one pawn with a melee / ranged weapon and armor, per tier of equipment.
 // TODO: Create a popup system, similar to the current Protection event.
 // TODO: Calculate the chance each tick that a reading army will spawn. Might just use the game's chance calculation.
+// TODO: Consider adding (a portion of) the liquid silver to the raider's budget.
 
 /**
  * In the current raider event, the soldier count is based on a very simple formula: garrison size + total settlement
@@ -73,6 +75,7 @@ public class RaidEvent implements IScriptEntity, ITickCapable {
 	public static final float RATION_CONSUMPTION_PER_DAY = 0.25f;
 	public static final float DRINK_CONSUMPTION_PER_DAY = 0.25f;
 	public static final float CLOTHES_CONSUMPTION_PER_DAY = 0.04f;
+	public static final float SETTLEMENT_RICHES_WEIGHT = 0.2f;
 	
 	public static final int PAWN_CONSUMPTION_PERIOD = 5;
 	public static final int DAYS_PER_YEAR = 16;
@@ -139,6 +142,7 @@ public class RaidEvent implements IScriptEntity, ITickCapable {
 		}
 		
 		settlementWealth += settlementPopulation * valueOfPawn;
+		settlementWealth += STATS.GOVERN().RICHES.data().get(null) * SETTLEMENT_RICHES_WEIGHT;
 	}
 	
 	private void calculateBudget() {
@@ -163,6 +167,16 @@ public class RaidEvent implements IScriptEntity, ITickCapable {
 		float valueOfClothesTotal = valueOfClothesPerDay * DAYS_PER_YEAR * PAWN_CONSUMPTION_PERIOD;
 		
 		valueOfPawn = (int) (BASE_PAWN_VALUE + valueOfRationsTotal + valueOfDrinksTotal + valueOfClothesTotal);
+	}
+	
+	/**
+	 * Calculates the value of the different types of equipment based on the buy price of the resource.
+	 */
+	@SuppressWarnings("DuplicateStringLiteralInspection")
+	private void calculateEquipmentValue() {
+		valueOfMeleeWeapon = stockpileStatistics.get(RESOURCES.map().tryGet("WEAPON")).getBuyPrice();
+		valueOfRangedWeapon = stockpileStatistics.get(RESOURCES.map().tryGet("BOW")).getBuyPrice();
+		valueOfArmor = stockpileStatistics.get(RESOURCES.map().tryGet("ARMOUR")).getBuyPrice();
 	}
 	
 	/**
@@ -264,6 +278,7 @@ public class RaidEvent implements IScriptEntity, ITickCapable {
 		calculatePopulation();
 		calculateSettlementProsperity();
 		calculatePawnValue();
+		calculateEquipmentValue();
 		calculateBudget();
 		
 		Logger.info("Triggering raid event, population: " + settlementPopulation + ", wealth: " + settlementWealth);
@@ -276,5 +291,17 @@ public class RaidEvent implements IScriptEntity, ITickCapable {
 		}
 		
 		spawnArmyInRegion(spawnRegion);
+		
+		int soldierCount = armyBudgetDivision.getPawnsBudget() / valueOfPawn;
+		String raiderName = RACES.all().get(0).info.armyNames.rnd();
+		
+		CouncilorMessage councilorMessage = new CouncilorMessage("Councilor", soldierCount);
+		
+		new RaidersMessage(
+				"Raiders!",
+				SETT.FACTION().capitolRegion().name().toString(),
+				raiderName,
+				councilorMessage
+		).send();
 	}
 }
