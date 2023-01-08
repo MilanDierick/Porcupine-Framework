@@ -25,11 +25,8 @@ import world.entity.WPathing;
 import world.entity.army.WArmy;
 import world.map.regions.Region;
 
-// TODO: Calculate how much resources the raiding army receives to construct it's divisions.
 // TODO: Calculate how much it costs to equip one pawn with a melee / ranged weapon and armor, per tier of equipment.
-// TODO: Calculate the estimate worth of a pawn, based on it's resource consumption over a certain amount of time.
 // TODO: Create a popup system, similar to the current Protection event.
-// TODO: When the player fails to pay up, implement the raiding army to route to the player's settlement and attack.
 // TODO: Calculate the chance each tick that a reading army will spawn. Might just use the game's chance calculation.
 
 /**
@@ -77,6 +74,7 @@ public class RaidEvent implements IScriptEntity, ITickCapable {
 	public static final float DRINK_CONSUMPTION_PER_DAY = 0.25f;
 	public static final float CLOTHES_CONSUMPTION_PER_DAY = 0.04f;
 	
+	public static final int PAWN_CONSUMPTION_PERIOD = 5;
 	public static final int DAYS_PER_YEAR = 16;
 	
 	private int playerVictories;
@@ -139,6 +137,8 @@ public class RaidEvent implements IScriptEntity, ITickCapable {
 			ResourceMetadata metadata = stockpileStatistics.get(resource);
 			settlementWealth += metadata.getStockpile() * metadata.getSellPrice();
 		}
+		
+		settlementWealth += settlementPopulation * valueOfPawn;
 	}
 	
 	private void calculateBudget() {
@@ -158,11 +158,11 @@ public class RaidEvent implements IScriptEntity, ITickCapable {
 		float valueOfDrinksPerDay = valueOfDrinks * DRINK_CONSUMPTION_PER_DAY;
 		float valueOfClothesPerDay = valueOfClothes * CLOTHES_CONSUMPTION_PER_DAY;
 		
-		float valueOfRationsPerYear = valueOfRationsPerDay * DAYS_PER_YEAR;
-		float valueOfDrinksPerYear = valueOfDrinksPerDay * DAYS_PER_YEAR;
-		float valueOfClothesPerYear = valueOfClothesPerDay * DAYS_PER_YEAR;
+		float valueOfRationsTotal = valueOfRationsPerDay * DAYS_PER_YEAR * PAWN_CONSUMPTION_PERIOD;
+		float valueOfDrinksTotal = valueOfDrinksPerDay * DAYS_PER_YEAR * PAWN_CONSUMPTION_PERIOD;
+		float valueOfClothesTotal = valueOfClothesPerDay * DAYS_PER_YEAR * PAWN_CONSUMPTION_PERIOD;
 		
-		valueOfPawn = (int) (BASE_PAWN_VALUE + valueOfRationsPerYear + valueOfDrinksPerYear + valueOfClothesPerYear);
+		valueOfPawn = (int) (BASE_PAWN_VALUE + valueOfRationsTotal + valueOfDrinksTotal + valueOfClothesTotal);
 	}
 	
 	/**
@@ -191,7 +191,11 @@ public class RaidEvent implements IScriptEntity, ITickCapable {
 		}
 		
 		// If this region is owned by the player, return true.
-		return region.faction() == FACTIONS.player();
+		if (region.faction() == FACTIONS.player()) {
+			return false;
+		}
+		
+		return WPathing.findAdjacentRegion(region, playerFinder) != null;
 	}
 	
 	/**
@@ -249,12 +253,14 @@ public class RaidEvent implements IScriptEntity, ITickCapable {
 		
 		army.name.clear().add(RACES.all().get(0).info.armyNames.rnd());
 		
+		// Fill the army with supplies, rebel armies should have enough supplies to reach the player's settlement.
 		for (WARMYD.WArmySupply supply : WARMYD.supplies().all) {
 			supply.current().set(army, supply.max(army));
 		}
 	}
 	
 	private void triggerRaid() {
+		clearCache();
 		calculatePopulation();
 		calculateSettlementProsperity();
 		calculatePawnValue();

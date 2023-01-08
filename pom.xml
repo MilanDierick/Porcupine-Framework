@@ -60,8 +60,22 @@
                             <classpathLayoutType>simple</classpathLayoutType>
                         </manifest>
                     </archive>
-
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.2.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>
@@ -70,11 +84,13 @@
                 <version>3.1.0</version>
                 <executions>
                     <execution>
-                        <phase>package</phase>
+                        <phase>install</phase>
                         <configuration>
                             <target>
                                 <copy file="target/${project.artifactId}-1.0-SNAPSHOT.jar"
                                       tofile="${user.home}/appdata/roaming/songsofsyx/mods/PorcupineFramework/V63/script/jar/${project.artifactId}-1.0-SNAPSHOT.jar"/>
+                                <copy file="target/${project.artifactId}-1.0-SNAPSHOT-sources.jar"
+                                      tofile="${user.home}/appdata/roaming/songsofsyx/mods/PorcupineFramework/V63/script/jar/${project.artifactId}-1.0-SNAPSHOT-sources.jar"/>
                             </target>
                         </configuration>
                         <goals>
