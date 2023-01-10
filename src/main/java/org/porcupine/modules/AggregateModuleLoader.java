@@ -4,9 +4,11 @@
 
 package org.porcupine.modules;
 
+import init.paths.ModInfo;
 import init.paths.PATHS;
 import org.jetbrains.annotations.Nullable;
 import org.porcupine.utilities.Logger;
+import snake2d.util.sets.LIST;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,6 +19,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -41,12 +44,11 @@ public final class AggregateModuleLoader {
 	}
 	
 	public static Iterable<Path> getModPaths() {
-		String[] modFolderNames = PATHS.local().MODS.folders();
-		Path modsPath = PATHS.local().MODS.get();
+		LIST<ModInfo> modInfos = PATHS.currentMods();
 		Collection<Path> paths = new ArrayList<>();
 		
-		for (String modPathName : modFolderNames) {
-			paths.add(modsPath.resolve(modPathName));
+		for (ModInfo modInfo : modInfos) {
+			paths.add(Paths.get(modInfo.absolutePath));
 		}
 		
 		return paths;
