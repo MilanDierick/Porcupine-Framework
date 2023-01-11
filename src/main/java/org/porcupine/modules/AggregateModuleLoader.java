@@ -35,7 +35,13 @@ import java.util.jar.JarInputStream;
 import java.util.stream.Collectors;
 
 public final class AggregateModuleLoader {
-	private static final Map<String, URI> loadedClasses = new HashMap<>();
+	private static final Map<String, URI> loadedClasses;
+	private static final List<ModInfo> modInfos;
+	
+	static {
+		loadedClasses = new HashMap<>();
+		modInfos = new ArrayList<>();
+	}
 	
 	/**
 	 * @apiNote Setting this constructor to private prevents the class from being erroneously instantiated.
@@ -43,33 +49,16 @@ public final class AggregateModuleLoader {
 	private AggregateModuleLoader() {
 	}
 	
-	public static Iterable<Path> getModPaths() {
-		LIST<ModInfo> modInfos = PATHS.currentMods();
-		Collection<Path> paths = new ArrayList<>();
-		
-		for (ModInfo modInfo : modInfos) {
-			paths.add(Paths.get(modInfo.absolutePath));
-		}
-		
-		return paths;
+	private static void loadMod(ModInfo modInfo) {
+	
 	}
 	
-	@SuppressWarnings("HardcodedFileSeparator")
-	public static Collection<Path> extendToScriptPaths(Iterable<? extends Path> modPaths) {
-		Collection<Path> paths = new ArrayList<>();
-		
-		for (Path modPath : modPaths) {
-			paths.add(modPath.resolve("V63/script/jar")); // TODO: Get the game version dynamically.
+	public static void loadMods() {
+		for (ModInfo info : PATHS.currentMods()) {
+			modInfos.add(info);
 		}
 		
-		return paths;
-	}
-	
-	public static List<Path> extendToJarPaths(Collection<? extends Path> modulePaths) {
-		return modulePaths.stream().map(Path::toFile).filter(File::isDirectory)
-		                  .flatMap(dir -> Arrays.stream(Objects.requireNonNull(dir.listFiles())))
-		                  .filter(file -> file.isFile() && file.getName().endsWith(".jar")).map(File::toPath)
-		                  .collect(Collectors.toCollection(ArrayList::new));
+		
 	}
 	
 	// TODO: Simplify this method.

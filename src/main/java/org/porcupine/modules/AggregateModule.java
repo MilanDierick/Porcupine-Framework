@@ -4,8 +4,20 @@
 
 package org.porcupine.modules;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonIOException;
+import init.paths.ModInfo;
+import org.jetbrains.annotations.Nullable;
+import org.porcupine.io.ISerializableTypeAdapterFactory;
 import org.porcupine.utilities.Version;
+import snake2d.util.file.FileManager;
 
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Objects;
 
 public class AggregateModule {
@@ -14,10 +26,11 @@ public class AggregateModule {
 	public ISerializable serializable;
 	public ITickCapable tickCapable;
 	
-	private String name;
-	private String description;
-	private String author;
-	private Version version;
+	private ModInfo modInfo;
+	
+	public AggregateModule() {
+	
+	}
 	
 	/**
 	 * Creates a new instance of AggregateModule.
@@ -48,20 +61,58 @@ public class AggregateModule {
 		}
 	}
 	
+	@SuppressWarnings("ImplicitDefaultCharsetUsage")
+	public static void serialize(AggregateModule module, Path moduleJsonPath) {
+		if (module.serializable == null) {
+			return;
+		}
+		
+		Class<? extends ISerializable> implementingClass = module.serializable.getClass();
+		
+		Gson gson = new GsonBuilder().registerTypeAdapterFactory(new ISerializableTypeAdapterFactory(implementingClass))
+		                             .setPrettyPrinting()
+		                             .create();
+		
+		try (FileWriter writer = new FileWriter(moduleJsonPath.toFile())) {
+			gson.toJson(module.serializable, implementingClass, writer);
+		} catch (JsonIOException | IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
+	@SuppressWarnings({"ImplicitDefaultCharsetUsage", "unchecked"})
+	public static @Nullable AggregateModule deserialize(String implementingClassName, Path moduleJsonPath) {
+		try (FileReader reader = new FileReader(moduleJsonPath.toFile())) {
+			Class<? extends ISerializable> implementingClass = (Class<? extends ISerializable>) Class.forName(
+					implementingClassName);
+			
+			Gson gson = new GsonBuilder().registerTypeAdapterFactory(new ISerializableTypeAdapterFactory(
+					implementingClass)).create();
+			
+			ISerializable serializable = gson.fromJson(reader, implementingClass);
+			
+			return new AggregateModule(serializable);
+		} catch (ClassNotFoundException | JsonIOException e) {
+			throw new RuntimeException(e);
+		} catch (IOException e) {
+			return null;
+		}
+	}
+	
 	public String getName() {
-		return name;
+		return modInfo.name;
 	}
 	
 	public String getDescription() {
-		return description;
+		return modInfo.desc;
 	}
 	
 	public String getAuthor() {
-		return author;
+		return modInfo.author;
 	}
 	
-	public String getVersion() {
-		return version.toString();
+	public Version getVersion() {
+		return new Version(modInfo.version);
 	}
 	
 	private boolean isValidModule() {
