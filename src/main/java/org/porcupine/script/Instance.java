@@ -12,10 +12,10 @@ import snake2d.Renderer;
 import snake2d.util.file.FileGetter;
 import snake2d.util.file.FilePutter;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+@SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
 public class Instance implements SCRIPT.SCRIPT_INSTANCE {
 	private final List<IScriptEntity> scriptEntities;
 	private final List<ITickCapable> tickCapables;
@@ -28,17 +28,7 @@ public class Instance implements SCRIPT.SCRIPT_INSTANCE {
 		this.renderCapables = new ArrayList<>();
 		this.serializables = new ArrayList<>();
 		
-		Iterable<AggregateModuleInfo> modules = null;
-		
-		try {
-			modules = AggregateModuleLoader.loadModInfos();
-		} catch (IOException e) {
-			Logger.error("Failed to load modules", e);
-		}
-		
-		if (modules == null) {
-			return;
-		}
+		Iterable<AggregateModule> modules = AggregateModuleLoader.loadModules();
 		
 		for (AggregateModule module : modules) {
 			processModule(module);
@@ -98,17 +88,17 @@ public class Instance implements SCRIPT.SCRIPT_INSTANCE {
 	public void save(FilePutter file) {
 		Logger.info("Saving Porcupine framework state information...");
 		
-//		for (ISerializable serializable : serializables) {
-//			serializable.onSerialize(file);
-//		}
+		//		for (ISerializable serializable : serializables) {
+		//			serializable.onSerialize(file);
+		//		}
 	}
 	
 	@Override
 	public void load(FileGetter file) {
 		Logger.info("Loading Porcupine framework state information...");
 		
-//		for (ISerializable serializable : serializables) {
-//			serializable.onDeserialize(file);
-//		}
+		//		for (ISerializable serializable : serializables) {
+		//			serializable.onDeserialize(file);
+		//		}
 	}
 }

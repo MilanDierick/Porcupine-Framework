@@ -4,19 +4,12 @@
 
 package org.porcupine.modules;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonIOException;
-import init.paths.ModInfo;
+import com.google.gson.*;
 import org.jetbrains.annotations.Nullable;
 import org.porcupine.io.ISerializableTypeAdapterFactory;
 import org.porcupine.utilities.Version;
-import snake2d.util.file.FileManager;
 
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Path;
 import java.util.Objects;
 
@@ -26,7 +19,7 @@ public class AggregateModule {
 	public ISerializable serializable;
 	public ITickCapable tickCapable;
 	
-	private ModInfo modInfo;
+	public AggregateModuleInfo modInfo;
 	
 	public AggregateModule() {
 	
@@ -70,8 +63,8 @@ public class AggregateModule {
 		Class<? extends ISerializable> implementingClass = module.serializable.getClass();
 		
 		Gson gson = new GsonBuilder().registerTypeAdapterFactory(new ISerializableTypeAdapterFactory(implementingClass))
-		                             .setPrettyPrinting()
-		                             .create();
+				.setPrettyPrinting()
+				.create();
 		
 		try (FileWriter writer = new FileWriter(moduleJsonPath.toFile())) {
 			gson.toJson(module.serializable, implementingClass, writer);
@@ -104,7 +97,7 @@ public class AggregateModule {
 	}
 	
 	public String getDescription() {
-		return modInfo.desc;
+		return modInfo.description;
 	}
 	
 	public String getAuthor() {
@@ -112,7 +105,7 @@ public class AggregateModule {
 	}
 	
 	public Version getVersion() {
-		return new Version(modInfo.version);
+		return modInfo.version;
 	}
 	
 	private boolean isValidModule() {

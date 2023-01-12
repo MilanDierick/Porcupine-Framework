@@ -8,11 +8,12 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.porcupine.utilities.Logger;
 
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -107,7 +108,7 @@ public final class FileManager {
 		return files;
 	}
 	
-	public static @Nullable <T> T readObjectFromFile(@NotNull Path file, @NotNull Class<T> clazz) {
+	public static @Nullable JarFile readJarFileFromPath(@NotNull Path file) {
 		if (!Files.isRegularFile(file)) {
 			throw new IllegalArgumentException("The given path is not a file.");
 		}
@@ -117,37 +118,33 @@ public final class FileManager {
 		}
 		
 		try {
-			return clazz.cast(Files.readAllBytes(file));
-		} catch (SecurityException e) {
-			Logger.error("Security exception while trying to read object from file: %s", file);
+			return new JarFile(file.toFile());
 		} catch (IOException e) {
-			Logger.error("IO exception while trying to read object from file: %s", file);
+			Logger.error("IO exception while trying to transform path to jar file: %s", file);
 		}
 		
 		return null;
 	}
 	
-	public static <T> @Nullable Collection<T> getObjectsInDirectory(
-			@NotNull Path directory,
-			@NotNull String extension,
-			@NotNull Class<? extends T> clazz
+	public static @Nullable Collection<JarFile> getJarFilesInDirectory(
+			@NotNull Path directory
 	) {
-		Iterable<Path> files = getFilesInDirectory(directory, extension);
+		Iterable<Path> files = getFilesInDirectory(directory, ".jar");
 		
 		if (files == null) {
 			return null;
 		}
 		
-		Collection<T> objects = new ArrayList<>();
+		Collection<JarFile> jarFiles = new ArrayList<>();
 		
 		for (Path file : files) {
-			T object = readObjectFromFile(file, clazz);
+			JarFile object = readJarFileFromPath(file);
 			
 			if (object != null) {
-				objects.add(object);
+				jarFiles.add(object);
 			}
 		}
 		
-		return objects;
+		return jarFiles;
 	}
 }
