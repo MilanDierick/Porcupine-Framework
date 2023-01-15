@@ -28,7 +28,7 @@ public class Instance implements SCRIPT.SCRIPT_INSTANCE {
 		this.renderCapables = new ArrayList<>();
 		this.serializables = new ArrayList<>();
 		
-		Iterable<AggregateModule> modules = AggregateModuleLoader.loadModules();
+		Iterable<AggregateModule> modules = AggregateModulesLoader.loadModules();
 		
 		for (AggregateModule module : modules) {
 			processModule(module);

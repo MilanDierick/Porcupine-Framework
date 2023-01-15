@@ -16,20 +16,20 @@ import java.util.Set;
 /**
  * A map of modules and module metadata.
  */
-public final class AggregateModuleCache implements Map<AggregateModule, AggregateModuleMetadata> {
+public final class AggregateModulesCache implements Map<AggregateModule, AggregateModuleMetadata> {
 	private final Map<AggregateModule, AggregateModuleMetadata> cache;
 	
 	/**
-	 * Creates a new {@link AggregateModuleCache} with an empty cache.
+	 * Creates a new {@link AggregateModulesCache} with an empty cache.
 	 */
-	public AggregateModuleCache() {
+	public AggregateModulesCache() {
 		this(0);
 	}
 	
 	/**
 	 * @param moduleCount The amount of modules that will be cached.
 	 */
-	public AggregateModuleCache(int moduleCount) {
+	public AggregateModulesCache(int moduleCount) {
 		cache = new HashMap<>(moduleCount);
 	}
 	

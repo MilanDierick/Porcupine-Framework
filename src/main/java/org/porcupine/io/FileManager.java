@@ -11,8 +11,7 @@ import org.porcupine.utilities.Logger;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.*;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -126,9 +125,7 @@ public final class FileManager {
 		return null;
 	}
 	
-	public static @Nullable Collection<JarFile> getJarFilesInDirectory(
-			@NotNull Path directory
-	) {
+	public static @Nullable Collection<JarFile> getJarFilesInDirectory(@NotNull Path directory) {
 		Iterable<Path> files = getFilesInDirectory(directory, ".jar");
 		
 		if (files == null) {
@@ -146,5 +143,17 @@ public final class FileManager {
 		}
 		
 		return jarFiles;
+	}
+	
+	public static @NotNull Properties loadProperties(@NotNull File configFile) {
+		Properties properties = new Properties();
+		
+		try (FileInputStream fileInputStream = new FileInputStream(configFile)) {
+			properties.load(fileInputStream);
+		} catch (IOException e) {
+			Logger.error("IO exception while trying to load properties from file: %s", configFile);
+		}
+		
+		return properties;
 	}
 }

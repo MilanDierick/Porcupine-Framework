@@ -13,6 +13,7 @@ import org.porcupine.utilities.Logger;
 import org.porcupine.utilities.Version;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.*;
 import java.nio.file.Path;
@@ -20,7 +21,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.jar.*;
 
-public final class AggregateModuleLoader {
+public final class AggregateModulesLoader {
 	private static final Map<String, URI> loadedClasses;
 	
 	static {
@@ -30,27 +31,56 @@ public final class AggregateModuleLoader {
 	/**
 	 * @apiNote Setting this constructor to private prevents the class from being erroneously instantiated.
 	 */
-	private AggregateModuleLoader() {
+	private AggregateModulesLoader() {
 		throw new AssertionError("This class cannot be instantiated.");
 	}
 	
 	public static Collection<AggregateModule> loadModules() {
-		Collection<AggregateModuleInfo> moduleInfos = loadModInfos();
-		Collection<AggregateModule> modules = new ArrayList<>(moduleInfos.size());
-		URLClassLoader loader = createLoader(moduleInfos);
+		Map<AggregateModuleInfo, AggregateModuleConfig> modulesMetaData = loadModConfigs(loadModInfos());
+		Collection<AggregateModule> modules = new ArrayList<>(modulesMetaData.size());
 		
-		for (AggregateModuleInfo info : moduleInfos) {
-			for (JarFile jarFile : info.jarFiles) {
-				Collection<AggregateModule> modulesInJar = processJar(jarFile, loader);
-				modulesInJar.forEach(module -> module.modInfo = info);
-				modules.addAll(processJar(jarFile, loader));
-			}
+		try (URLClassLoader loader = createLoader(modulesMetaData.keySet())) {
+			modulesMetaData.forEach((info, config) -> {
+				for (JarFile jarFile : info.jarFiles) {
+					Collection<AggregateModule> modulesInJar = processJar(jarFile, info, config, loader);
+					modulesInJar.forEach(module -> module.modInfo = info);
+					modules.addAll(modulesInJar);
+				}
+			});
+		} catch (IOException e) {
+			Logger.error("IO exception while trying to load modules.");
 		}
 		
 		return modules;
 	}
 	
-	private static URLClassLoader createLoader(Collection<? extends AggregateModuleInfo> moduleInfos) {
+	private static Map<AggregateModuleInfo, AggregateModuleConfig> loadModConfigs(Iterable<AggregateModuleInfo> loadModInfos) {
+		Map<AggregateModuleInfo, AggregateModuleConfig> configs = new HashMap<>();
+		
+		for (AggregateModuleInfo info : loadModInfos) {
+			Path saves = info.paths.savesPath;
+			
+			if (saves == null) {
+				Logger.error("Module %s does not have a saves directory.", info.name);
+				continue;
+			}
+			
+			// Grab the config file from the saves directory with the name of the module.
+			File configFile = saves.resolve(info.name + ".properties").toFile();
+			
+			if (!configFile.exists()) {
+				Logger.error("Module %s does not have a config file.", info.name);
+				continue;
+			}
+			
+			Properties properties = FileManager.loadProperties(configFile);
+			configs.put(info, new AggregateModuleConfig(properties));
+		}
+		
+		return configs;
+	}
+	
+	private static URLClassLoader createLoader(Collection<AggregateModuleInfo> moduleInfos) {
 		URL[] urls = moduleInfos.stream()
 				.flatMap(moduleInfo -> moduleInfo.jarFiles.stream())
 				.map(jarFile -> {
@@ -61,7 +91,7 @@ public final class AggregateModuleLoader {
 					}
 				}).toArray(URL[]::new);
 		
-		return new URLClassLoader(urls, AggregateModuleLoader.class.getClassLoader());
+		return new URLClassLoader(urls, AggregateModulesLoader.class.getClassLoader());
 	}
 	
 	private static Collection<AggregateModuleInfo> loadModInfos() {
@@ -98,7 +128,12 @@ public final class AggregateModuleLoader {
 	}
 	
 	@SuppressWarnings({"DynamicRegexReplaceableByCompiledPattern", "HardcodedFileSeparator"})
-	private static @NotNull Collection<AggregateModule> processJar(JarFile jarFile, URLClassLoader loader) {
+	private static @NotNull Collection<AggregateModule> processJar(
+			JarFile jarFile,
+			AggregateModuleInfo info,
+			AggregateModuleConfig config,
+			URLClassLoader loader
+	) {
 		Collection<AggregateModule> modules = new ArrayList<>();
 		Enumeration<JarEntry> entries = jarFile.entries();
 		
@@ -111,7 +146,7 @@ public final class AggregateModuleLoader {
 			
 			String className = entry.getName().replace(".class", "").replace('/', '.');
 			
-			AggregateModule module = loadClass(loader, className, jarFile);
+			AggregateModule module = loadClass(loader, className, jarFile, info, config);
 			
 			if (module != null) {
 				modules.add(module);
@@ -121,7 +156,13 @@ public final class AggregateModuleLoader {
 		return modules;
 	}
 	
-	private static @Nullable AggregateModule loadClass(URLClassLoader loader, String name, JarFile file) {
+	private static @Nullable AggregateModule loadClass(
+			URLClassLoader loader,
+			String name,
+			JarFile file,
+			AggregateModuleInfo info,
+			AggregateModuleConfig config
+	) {
 		try {
 			Class<?> clazz = loader.loadClass(name);
 			
