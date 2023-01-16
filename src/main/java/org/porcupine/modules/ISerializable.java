@@ -8,19 +8,17 @@ import snake2d.util.file.FileGetter;
 import snake2d.util.file.FilePutter;
 
 public interface ISerializable {
-    String getClassName();
-    
-    /**
-     * Invoked when the object is being serialized.
-     */
-    default void onSerialize() {
-    
-    }
-    
-    /**
-     * Invoked when the object is being deserialized.
-     */
-    default void onDeserialize() {
-    
-    }
+	/**
+	 * Invoked when the object is being serialized.
+	 */
+	default void onSerialize(FilePutter writer) {
+	
+	}
+	
+	/**
+	 * Invoked when the object is being deserialized.
+	 */
+	default void onDeserialize(FileGetter reader) {
+	
+	}
 }
