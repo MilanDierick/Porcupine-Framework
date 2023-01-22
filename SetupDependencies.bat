@@ -18,6 +18,9 @@ xcopy /E /I /Y "%SONGS_OF_SYX_PATH%\errorLogs" "%cd%\errorLogs"
 :: Copy the SongsOfSyx.jar file
 xcopy /Y "%SONGS_OF_SYX_PATH%\SongsOfSyx.jar" "%cd%\SongsOfSyx.jar"
 
+:: Copy the SongsOfSyx-sources.jar file
+xcopy /Y "%SONGS_OF_SYX_PATH%\info\SongsOfSyx-sources.jar" "%cd%\SongsOfSyx-sources.jar"
+
 @echo on
 
 REM Make sure to copy the Porcupine Framework JAR to the root directory of this project!
