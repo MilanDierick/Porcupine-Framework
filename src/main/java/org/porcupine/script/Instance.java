@@ -4,29 +4,36 @@
 
 package org.porcupine.script;
 
+import org.porcupine.events.*;
 import org.porcupine.modules.*;
 import org.porcupine.statistics.Statistics;
 import org.porcupine.utilities.Logger;
 import script.SCRIPT;
+import settlement.main.SETT;
+import settlement.room.main.Room;
 import snake2d.Renderer;
 import snake2d.util.file.FileGetter;
 import snake2d.util.file.FilePutter;
 
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
 
 @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
 public class Instance implements SCRIPT.SCRIPT_INSTANCE {
-	private final List<IScriptEntity> scriptEntities;
-	private final List<ITickCapable> tickCapables;
-	private final List<IRenderCapable> renderCapables;
-	private final List<ISerializable> serializables;
+	private final Collection<IScriptEntity> scriptEntities;
+	private final Collection<ITickCapable> tickCapables;
+	private final Collection<IRenderCapable> renderCapables;
+	private final Collection<ISerializable> serializables;
+	private final Collection<IGlobalEvent> globalEvents;
+	private final Collection<IRoomEvent> roomEvents;
 	
 	public Instance() {
 		this.scriptEntities = new ArrayList<>();
 		this.tickCapables = new ArrayList<>();
 		this.renderCapables = new ArrayList<>();
 		this.serializables = new ArrayList<>();
+		this.globalEvents = EventLoader.getGlobalEvents();
+		this.roomEvents = EventLoader.getRoomEvents();
 		
 		Iterable<AggregateModule> modules = AggregateModuleLoader.getModules();
 		
@@ -66,12 +73,35 @@ public class Instance implements SCRIPT.SCRIPT_INSTANCE {
 	 *
 	 * @apiNote delta is zero when the game is paused.
 	 */
+	@SuppressWarnings("UnsecureRandomNumberGeneration")
 	@Override
 	public void update(double ds) {
 		Statistics.refreshAllStats();
 		
 		for (ITickCapable tickCapable : tickCapables) {
 			tickCapable.onTick(ds);
+		}
+		
+		for (IGlobalEvent globalEvent : globalEvents) {
+			float chance = globalEvent.chancePerSecond();
+			
+			if (chance > 0 && Math.random() < chance * ds) {
+				globalEvent.onEvent();
+			}
+		}
+		
+		for (IRoomEvent roomEvent : roomEvents) {
+			for (Room room : SETT.ROOMS().getAllRooms()) {
+				if (room.getType != roomEvent.getRoomType()) {
+					continue;
+				}
+				
+				float chance = roomEvent.chancePerSecond();
+				
+				if (chance > 0 && Math.random() < chance * ds) {
+					roomEvent.onEvent(room);
+				}
+			}
 		}
 	}
 	
