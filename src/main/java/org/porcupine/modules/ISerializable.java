@@ -12,7 +12,10 @@ public interface ISerializable {
 	 * Invoked when the object is being serialized.
 	 */
 	default void onSerialize(FilePutter writer) {
-	
+		if (this instanceof ModuleBase) {
+			ModuleBase module = (ModuleBase) this;
+			module.persistConfig();
+		}
 	}
 	
 	/**

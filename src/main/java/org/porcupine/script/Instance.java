@@ -88,17 +88,17 @@ public class Instance implements SCRIPT.SCRIPT_INSTANCE {
 	public void save(FilePutter file) {
 		Logger.info("Saving Porcupine framework state information...");
 		
-		//		for (ISerializable serializable : serializables) {
-		//			serializable.onSerialize(file);
-		//		}
+		for (ISerializable serializable : serializables) {
+			serializable.onSerialize(file);
+		}
 	}
 	
 	@Override
 	public void load(FileGetter file) {
 		Logger.info("Loading Porcupine framework state information...");
 		
-		//		for (ISerializable serializable : serializables) {
-		//			serializable.onDeserialize(file);
-		//		}
+		for (ISerializable serializable : serializables) {
+			serializable.onDeserialize(file);
+		}
 	}
 }
