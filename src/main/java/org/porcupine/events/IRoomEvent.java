@@ -4,15 +4,15 @@
 
 package org.porcupine.events;
 
-import settlement.room.main.Room;
+import settlement.room.main.*;
 
 public interface IRoomEvent {
 	/**
 	 * This method is called when the event occurs.
 	 *
-	 * @param room the room that this event is associated with.
+	 * @param instance the instance of the type of room that this event is associated with.
 	 */
-	void onEvent(Room room);
+	void onEvent(RoomInstance instance);
 	
 	/**
 	 * @return the chance that this event will occur per in-game second.
@@ -22,5 +22,5 @@ public interface IRoomEvent {
 	/**
 	 * @return the name of the building that this event is associated with.
 	 */
-	String getRoomType();
+	RoomBlueprintIns<?> getRoomType();
 }

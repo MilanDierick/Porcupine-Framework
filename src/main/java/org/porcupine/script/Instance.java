@@ -9,8 +9,8 @@ import org.porcupine.modules.*;
 import org.porcupine.statistics.Statistics;
 import org.porcupine.utilities.Logger;
 import script.SCRIPT;
-import settlement.main.SETT;
-import settlement.room.main.Room;
+import settlement.room.main.RoomBlueprintIns;
+import settlement.room.main.RoomInstance;
 import snake2d.Renderer;
 import snake2d.util.file.FileGetter;
 import snake2d.util.file.FilePutter;
@@ -90,17 +90,11 @@ public class Instance implements SCRIPT.SCRIPT_INSTANCE {
 			}
 		}
 		
-		for (IRoomEvent roomEvent : roomEvents) {
-			for (Room room : SETT.ROOMS().getAllRooms()) {
-				if (room.getType != roomEvent.getRoomType()) {
-					continue;
-				}
-				
-				float chance = roomEvent.chancePerSecond();
-				
-				if (chance > 0 && Math.random() < chance * ds) {
-					roomEvent.onEvent(room);
-				}
+		for (IRoomEvent event : roomEvents) {
+			RoomBlueprintIns<?> blueprint = event.getRoomType();
+			for (int ri = 0; ri < blueprint.instancesSize(); ri++) {
+				RoomInstance instance = blueprint.getInstance(ri);
+				event.onEvent(instance);
 			}
 		}
 	}
