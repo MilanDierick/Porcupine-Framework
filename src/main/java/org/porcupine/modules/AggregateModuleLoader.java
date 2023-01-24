@@ -6,200 +6,153 @@ package org.porcupine.modules;
 
 import init.paths.ModInfo;
 import init.paths.PATHS;
-import org.jetbrains.annotations.Nullable;
-import org.porcupine.utilities.Logger;
-import snake2d.util.sets.LIST;
+import org.porcupine.io.FileManager;
+import org.porcupine.utilities.Version;
 
 import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.URLClassLoader;
+import java.net.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.jar.JarEntry;
-import java.util.jar.JarInputStream;
-import java.util.stream.Collectors;
+import java.util.jar.JarFile;
 
+@SuppressWarnings("BooleanVariableAlwaysNegated")
 public final class AggregateModuleLoader {
-	private static final Map<String, URI> loadedClasses = new HashMap<>();
+	private static final Collection<AggregateModuleInfo> moduleInfos;
+	private static final Collection<AggregateModule> modules;
+	private static final Map<AggregateModuleInfo, AggregateModuleConfig> moduleConfigs;
+	private static final Map<AggregateModuleInfo, Collection<String>> moduleClasses;
+	private static boolean modulesLoaded;
+	
+	static {
+		moduleInfos = new ArrayList<>();
+		modules = new ArrayList<>();
+		moduleConfigs = new HashMap<>();
+		moduleClasses = new HashMap<>();
+		modulesLoaded = false;
+	}
 	
 	/**
 	 * @apiNote Setting this constructor to private prevents the class from being erroneously instantiated.
 	 */
 	private AggregateModuleLoader() {
+		throw new AssertionError("This class cannot be instantiated.");
 	}
 	
-	public static Iterable<Path> getModPaths() {
-		LIST<ModInfo> modInfos = PATHS.currentMods();
-		Collection<Path> paths = new ArrayList<>();
-		
-		for (ModInfo modInfo : modInfos) {
-			paths.add(Paths.get(modInfo.absolutePath));
+	public static Collection<AggregateModule> getModules() {
+		if (!modulesLoaded) {
+			createModuleInfos();
+			createModuleConfigs();
+			prepareModuleClasses();
+			createAggregateModules();
+			modulesLoaded = true;
 		}
 		
-		return paths;
+		return Collections.unmodifiableCollection(modules);
 	}
 	
-	@SuppressWarnings("HardcodedFileSeparator")
-	public static Collection<Path> extendToScriptPaths(Iterable<? extends Path> modPaths) {
-		Collection<Path> paths = new ArrayList<>();
-		
-		for (Path modPath : modPaths) {
-			paths.add(modPath.resolve("V63/script/jar")); // TODO: Get the game version dynamically.
-		}
-		
-		return paths;
-	}
-	
-	public static List<Path> extendToJarPaths(Collection<? extends Path> modulePaths) {
-		return modulePaths.stream().map(Path::toFile).filter(File::isDirectory)
-		                  .flatMap(dir -> Arrays.stream(Objects.requireNonNull(dir.listFiles())))
-		                  .filter(file -> file.isFile() && file.getName().endsWith(".jar")).map(File::toPath)
-		                  .collect(Collectors.toCollection(ArrayList::new));
-	}
-	
-	// TODO: Simplify this method.
-	@SuppressWarnings({"OverlyComplexMethod", "OverlyLongMethod"})
-	public static @Nullable Set<AggregateModule> extractModules(List<? extends Path> jarPaths) {
-		Set<AggregateModule> modules = new HashSet<>(); // We use a set to prevent duplicates.
-		List<URL> urls = new ArrayList<>(jarPaths.size());
-		
-		try {
-			for (Path jarPath : jarPaths) {
-				urls.add(jarPath.toUri().toURL());
-			}
-		} catch (MalformedURLException e) {
-			Logger.error("Failed to interpret jar path as URL, aborting.");
-			return null;
-		}
-		
-		URLClassLoader loader = new URLClassLoader(urls.toArray(new URL[jarPaths.size()]),
-		                                           AggregateModuleLoader.class.getClassLoader()
-		);
-		
-		for (Path jarPath : jarPaths) {
-			JarInputStream stream;
-			try {
-				stream = new JarInputStream(urls.get(jarPaths.indexOf(jarPath)).openStream());
-			} catch (IOException e) {
-				Logger.error("Failed to open jar stream, aborting.");
-				return null;
-			}
+	private static void createModuleInfos() {
+		for (ModInfo info : PATHS.currentMods()) {
+			Path absolutePath = Paths.get(info.absolutePath, File.separator + "V63");
+			Path campaignsPath = absolutePath.resolve("campaigns");
+			Path examplesPath = absolutePath.resolve("examples");
+			Path savesPath = absolutePath.resolve("saves");
+			Path scriptsPath = absolutePath.resolve("script");
 			
-			try {
-				JarEntry entry;
-				
-				while ((entry = stream.getNextJarEntry()) != null) {
-					AggregateModule module = extractModule(loader, entry, urls.get(jarPaths.indexOf(jarPath)).toURI());
-					
-					if (module != null) {
-						if (modules.add(module)) {
-							Logger.info("Loaded module %s from %s", module.getName(), jarPath.getFileName());
-						} else {
-							Logger.warn("Duplicate module %s found in %s. Please contact the module developer.",
-							            module.getName(),
-							            jarPath.getFileName()
-							);
-						}
-					}
-				}
-			} catch (IOException e) {
-				Logger.error("Failed to read jar file, aborting.");
-				return null;
-			} catch (URISyntaxException e) {
-				Logger.error("Failed to interpret jar path as URI, aborting.");
-				return null;
-			} finally {
-				try {
-					loader.close();
-					stream.close();
-				} catch (IOException e) {
-					Logger.error("Failed to close URLClassLoader, aborting.");
-				}
-			}
-		}
-		
-		return modules;
-	}
-	
-	/**
-	 * Constructs a File instance from a file URI. Returns null if it's not a file URI.
-	 *
-	 * @param uri a URI instance (never null).
-	 *
-	 * @return null if uri is not a file URI or a File instance
-	 */
-	public static File getFile(URI uri) {
-		assert uri != null;
-		
-		@Nullable File result;
-		String scheme = uri.getScheme();
-		if ((scheme == null) || !"file".equals(scheme.toLowerCase(Locale.ROOT))) { //NOI18N
-			result = null;
-		} else {
-			try {
-				result = new File(uri);
-			} catch (IllegalArgumentException x) {
-				result = null;
-			}
-		}
-		
-		return result;
-	}
-	
-	@SuppressWarnings({"DuplicateStringLiteralInspection", "DynamicRegexReplaceableByCompiledPattern", "HardcodedFileSeparator"})
-	private static @Nullable AggregateModule extractModule(URLClassLoader loader, JarEntry entry, URI currentJarPath) {
-		if (entry.isDirectory() || !entry.getName().endsWith(".class")) {
-			return null;
-		}
-		
-		String className = entry.getName().replace(".class", "").replace('/', '.');
-		
-		if (loadedClasses.containsKey(className)) {
-			String loadedJar = getFile(loadedClasses.get(className)).getPath();
-			String currentJar = getFile(currentJarPath).getPath();
+			Version version = new Version(info.version);
 			
-			// These strings are formatted as file:/path/to/jar.jar
-			// We just need the file name.
-			loadedJar = loadedJar.substring(loadedJar.lastIndexOf(File.separatorChar) + 1);
-			currentJar = currentJar.substring(currentJar.lastIndexOf(File.separatorChar) + 1);
-			
-			Logger.warn("Duplicate class %s found in %s and %s. Please contact the module developers.",
-			            className,
-			            loadedJar,
-			            currentJar
+			AggregateModulePaths paths = new AggregateModulePaths(
+					absolutePath,
+					campaignsPath,
+					examplesPath,
+					savesPath,
+					scriptsPath
 			);
-		}
-		
-		loadedClasses.put(className, currentJarPath);
-		
-		try {
-			Class<?> clazz = loader.loadClass(className);
 			
-			if (IScriptEntity.class.isAssignableFrom(clazz) && !clazz.isInterface()) {
-				return new AggregateModule(clazz.getDeclaredConstructor().newInstance());
-			}
-		} catch (ClassNotFoundException e) {
-			Logger.error("Failed to load class %s. Please contact the module developer.", className);
-		} catch (InvocationTargetException | InstantiationException | IllegalAccessException |
-		         NoSuchMethodException e) {
-			Logger.error("Failed to instantiate class %s. Please contact the module developer.", className);
+			Collection<JarFile> jarFiles = FileManager.getJarFilesInDirectory(paths.scriptsPath.resolve("jar"));
+			
+			moduleInfos.add(new AggregateModuleInfo(
+					info.name,
+					info.desc,
+					info.author,
+					version,
+					paths,
+					jarFiles
+			));
 		}
+	}
+	
+	private static void createModuleConfigs() {
+		for (AggregateModuleInfo info : moduleInfos) {
+			File configFile = info.paths.absolutePath.resolve("config.properties").toFile();
+			Properties properties = FileManager.loadProperties(configFile);
+			AggregateModuleConfig config = new AggregateModuleConfig(properties);
+			moduleConfigs.put(info, config);
+		}
+	}
+	
+	@SuppressWarnings({"DynamicRegexReplaceableByCompiledPattern", "HardcodedFileSeparator"})
+	private static void prepareModuleClasses() {
+		for (AggregateModuleInfo info : moduleInfos) {
+			Collection<String> classNames = new ArrayList<>();
+			
+			for (JarFile jarFile : info.jarFiles) {
+				Enumeration<JarEntry> entries = jarFile.entries();
+				
+				while (entries.hasMoreElements()) {
+					JarEntry entry = entries.nextElement();
+					
+					if (entry.isDirectory() || !entry.getName().endsWith(".class")) {
+						continue;
+					}
+					
+					String className = entry.getName().replace(".class", "").replace('/', '.');
+					
+					if (className.contains("package-info")) {
+						continue;
+					}
+					
+					classNames.add(className);
+				}
+			}
+			
+			moduleClasses.put(info, classNames);
+		}
+	}
+	
+	private static void createAggregateModules() {
+		for (AggregateModuleInfo info : moduleInfos) {
+			for (String className : moduleClasses.get(info)) {
+				try (URLClassLoader classLoader = createLoader()) {
+					Class<?> clazz = classLoader.loadClass(className);
+					
+					if (IScriptEntity.class.isAssignableFrom(clazz) && !clazz.isInterface()) {
+						AggregateModule module = new AggregateModule(clazz.getConstructor().newInstance(), info);
+						
+						module.modInfo = info;
+						module.modConfig = moduleConfigs.get(info);
+						
+						modules.add(module);
+					}
+				} catch (Exception e) {
+					throw new IllegalArgumentException(e);
+				}
+			}
+		}
+	}
+	
+	private static URLClassLoader createLoader() {
+		URL[] urls = moduleInfos.stream()
+				.flatMap(moduleInfo -> moduleInfo.jarFiles.stream())
+				.map(jarFile -> {
+					try {
+						return new File(jarFile.getName()).toURI().toURL();
+					} catch (MalformedURLException e) {
+						throw new RuntimeException(e);
+					}
+				}).toArray(URL[]::new);
 		
-		return null;
+		return new URLClassLoader(urls, AggregateModuleLoader.class.getClassLoader());
 	}
 }

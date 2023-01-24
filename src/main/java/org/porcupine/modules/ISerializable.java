@@ -8,21 +8,20 @@ import snake2d.util.file.FileGetter;
 import snake2d.util.file.FilePutter;
 
 public interface ISerializable {
-    /**
-     * Invoked when the object is being serialized.
-     *
-     * @param writer The writer to write to.
-     */
-    default void onSerialize(FilePutter writer) {
-    
-    }
-    
-    /**
-     * Invoked when the object is being deserialized.
-     *
-     * @param reader The reader to read from.
-     */
-    default void onDeserialize(FileGetter reader) {
-    
-    }
+	/**
+	 * Invoked when the object is being serialized.
+	 */
+	default void onSerialize(FilePutter writer) {
+		if (this instanceof ModuleBase) {
+			ModuleBase module = (ModuleBase) this;
+			module.persistConfig();
+		}
+	}
+	
+	/**
+	 * Invoked when the object is being deserialized.
+	 */
+	default void onDeserialize(FileGetter reader) {
+	
+	}
 }

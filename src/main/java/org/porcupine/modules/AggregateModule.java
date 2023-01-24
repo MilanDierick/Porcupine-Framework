@@ -14,10 +14,12 @@ public class AggregateModule {
 	public ISerializable serializable;
 	public ITickCapable tickCapable;
 	
-	private String name;
-	private String description;
-	private String author;
-	private Version version;
+	public AggregateModuleInfo modInfo;
+	public AggregateModuleConfig modConfig;
+	
+	public AggregateModule() {
+	
+	}
 	
 	/**
 	 * Creates a new instance of AggregateModule.
@@ -26,7 +28,7 @@ public class AggregateModule {
 	 *
 	 * @throws IllegalArgumentException If the object does not implement {@link IRenderCapable}.
 	 */
-	public AggregateModule(Object object) {
+	public AggregateModule(Object object, AggregateModuleInfo modInfo) {
 		if (object instanceof IRenderCapable) {
 			renderCapable = (IRenderCapable) object;
 		}
@@ -46,22 +48,24 @@ public class AggregateModule {
 		if (!isValidModule()) {
 			throw new IllegalArgumentException("Object is not a valid module");
 		}
+		
+		this.modInfo = modInfo.clone();
 	}
 	
 	public String getName() {
-		return name;
+		return modInfo.name;
 	}
 	
 	public String getDescription() {
-		return description;
+		return modInfo.description;
 	}
 	
 	public String getAuthor() {
-		return author;
+		return modInfo.author;
 	}
 	
-	public String getVersion() {
-		return version.toString();
+	public Version getVersion() {
+		return modInfo.version;
 	}
 	
 	private boolean isValidModule() {

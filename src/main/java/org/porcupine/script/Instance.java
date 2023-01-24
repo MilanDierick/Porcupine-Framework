@@ -4,12 +4,7 @@
 
 package org.porcupine.script;
 
-import org.porcupine.modules.IRenderCapable;
-import org.porcupine.modules.IScriptEntity;
-import org.porcupine.modules.ISerializable;
-import org.porcupine.modules.ITickCapable;
-import org.porcupine.modules.AggregateModule;
-import org.porcupine.modules.AggregateModuleLoader;
+import org.porcupine.modules.*;
 import org.porcupine.statistics.Statistics;
 import org.porcupine.utilities.Logger;
 import script.SCRIPT;
@@ -17,12 +12,10 @@ import snake2d.Renderer;
 import snake2d.util.file.FileGetter;
 import snake2d.util.file.FilePutter;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
+@SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
 public class Instance implements SCRIPT.SCRIPT_INSTANCE {
 	private final List<IScriptEntity> scriptEntities;
 	private final List<ITickCapable> tickCapables;
@@ -35,14 +28,7 @@ public class Instance implements SCRIPT.SCRIPT_INSTANCE {
 		this.renderCapables = new ArrayList<>();
 		this.serializables = new ArrayList<>();
 		
-		Iterable<Path> paths = AggregateModuleLoader.getModPaths();
-		Collection<Path> modulePaths = AggregateModuleLoader.extendToScriptPaths(paths);
-		List<Path> jarPaths = AggregateModuleLoader.extendToJarPaths(modulePaths);
-		Set<AggregateModule> modules = AggregateModuleLoader.extractModules(jarPaths);
-		
-		if (modules == null) {
-			return;
-		}
+		Iterable<AggregateModule> modules = AggregateModuleLoader.getModules();
 		
 		for (AggregateModule module : modules) {
 			processModule(module);
